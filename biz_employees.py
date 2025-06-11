@@ -7,7 +7,7 @@ from biz_linkage import open_biz_linkage_popup
 DB_PATH = "phoenix.db"
 
 class EmployeeForm:
-    def __init__(self, root, person_id=None, employment_id=None):
+    def __init__(self, root, person_id=None, employment_id=None, biz_id=None):        
         self.conn = sqlite3.connect(DB_PATH)
         self.cursor = self.conn.cursor()
         self.person_id = person_id
@@ -15,7 +15,7 @@ class EmployeeForm:
         self.root = root
         self.root.title("Edit Employment" if employment_id else "Add Employment")
         self.entries = {}
-        self.biz_id = None
+        self.biz_id = biz_id
         self.setup_form()
         if employment_id:
             self.load_data()
@@ -35,6 +35,12 @@ class EmployeeForm:
         ttk.Label(self.root, text="Business:").grid(row=row_num, column=0, padx=5, pady=5, sticky="e")
         self.biz_display = ttk.Label(self.root, text="(None Selected)", width=40, relief="sunken", anchor="w")
         self.biz_display.grid(row=row_num, column=1, padx=5, pady=5, sticky="w")
+        if self.biz_id:
+            self.cursor.execute("SELECT biz_name FROM Biz WHERE biz_id = ?", (self.biz_id,))
+            row = self.cursor.fetchone()
+            if row:
+                self.biz_display.config(text=row[0])
+        
 
         def set_business_id(biz_id):
             self.cursor.execute("SELECT biz_name FROM Biz WHERE biz_id = ?", (biz_id,))
@@ -143,10 +149,25 @@ class EmployeeForm:
         self.root.destroy()
 
 
-def open_employee_editor(person_id=None, employment_id=None):
-    root = tk.Tk()
-    app = EmployeeForm(root, person_id=person_id, employment_id=employment_id)
-    root.mainloop()
+def open_employee_editor(person_id=None, employment_id=None, parent=None, biz_id=None):
+    """Launch the employee editor.
+
+    When *parent* is provided the editor is created as a child ``Toplevel`` of
+    that window so it shares the same Tk interpreter.  This avoids issues with
+    Tk variable scope when the editor is opened from another form.
+    """
+
+    if parent is None:
+        root = tk.Tk()
+        EmployeeForm(root, person_id=person_id, employment_id=employment_id, biz_id=biz_id)
+        root.geometry("600x300")
+        root.mainloop()
+        return None
+    else:
+        win = tk.Toplevel(parent)
+        EmployeeForm(win, person_id=person_id, employment_id=employment_id, biz_id=biz_id)
+        win.grab_set()
+        return win
 
 
 def main():
@@ -154,10 +175,11 @@ def main():
     parser = argparse.ArgumentParser(description="Employee Editor")
     parser.add_argument("--for-person", type=int, help="Person ID to add employment for")
     parser.add_argument("--edit-employment", type=int, help="Employment ID to edit")
+    parser.add_argument("--for-biz", type=int, help="Preselect Business ID")
     args = parser.parse_args()
 
     root = tk.Tk()
-    app = EmployeeForm(root, person_id=args.for_person, employment_id=args.edit_employment)
+    app = EmployeeForm(root, person_id=args.for_person, employment_id=args.edit_employment, biz_id=args.for_biz)
     root.geometry("600x300")
     root.mainloop()
 

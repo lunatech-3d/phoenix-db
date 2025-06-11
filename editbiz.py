@@ -61,7 +61,6 @@ class EditBusinessForm:
     
 
     def open_linked_business(self, field):
-        print(f"Made it to the open linked function.",flush=True)
         label = self.entries[field].cget("text")
         if not label:
             return
@@ -359,8 +358,6 @@ class EditBusinessForm:
             self.open_owner_editor(existing=values)
 
     def open_owner_editor(self, existing=None, person_id=None):
-        
-        print(f"the person id is {person_id}",flush=True)
         self.owner_win = tk.Toplevel(self.master)
         self.owner_win.title("Edit Owner" if existing else "Add Owner")
 
@@ -600,7 +597,7 @@ class EditBusinessForm:
                 address_frame = ttk.Frame(self.location_win)
                 address_frame.grid(row=idx, column=1, padx=5, pady=3, sticky="w")
 
-                search_var = tk.StringVar()
+                search_var = tk.StringVar(master=self.location_win)
                 search_entry = ttk.Entry(address_frame, textvariable=search_var, width=30)
                 search_entry.pack(side="left", padx=(0, 5))
 
@@ -802,7 +799,10 @@ class EditBusinessForm:
 
     def add_employee(self):
         def on_person_selected(person_id):
-            open_employee_editor(person_id=person_id)
+            win = open_employee_editor(person_id=person_id, parent=self.master, biz_id=self.biz_id)
+            if win is not None:
+                self.master.wait_window(win)
+                self.load_employees()        
         person_search_popup(on_person_selected)
 
     def edit_employee(self):
@@ -815,6 +815,7 @@ class EditBusinessForm:
     def open_employee_editor(self, existing=None):
         win = tk.Toplevel(self.master)
         win.title("Edit Employee" if existing else "Add Employee")
+        win.geometry("600x300")
         self.employee_entries = {}
         self.employee_existing = existing
         entries = self.employee_entries
