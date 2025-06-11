@@ -1,0 +1,6 @@
+requests
+pandas
+geopandas
+folium
+beautifulsoup4
+shapely

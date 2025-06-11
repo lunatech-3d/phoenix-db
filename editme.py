@@ -463,19 +463,27 @@ def resize_image(input_image_path, size):
 def add_a_photo():
     image_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.png;*.tif")])
     if image_path:
+        # Extract just the filename
+        filename = os.path.basename(image_path)
+
+        # Define the relative path where your images are expected to be located
+        relative_path = f"assets/pics/thumb/{filename}"
+
+        # Store only the relative path in the database
         query = """
             INSERT INTO Photos (person_id, image_path)
             VALUES (?, ?)
-            """
+        """
         try:
-            cursor.execute(query, (record_id, image_path))
+            cursor.execute(query, (record_id, relative_path))
             connection.commit()
             messagebox.showinfo("Success", "The photo was successfully added to the database.")
-            display_image(frame_photo, image_path, add_photo_button)
+            display_image(frame_photo, relative_path, add_photo_button)
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred while writing to the database: {str(e)}")
     else:
         messagebox.showinfo("No File Selected", "No file was selected. Please try again.")
+
 
 def add_a_spouse():
     subprocess.run(["python", "marriagerecord_add.py"])
