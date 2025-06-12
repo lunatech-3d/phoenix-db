@@ -1,10 +1,12 @@
 import sqlite3
 import tkinter as tk
+import sys
+from config import DB_PATH
 from tkinter import ttk, messagebox
 from tkinter import filedialog
 
 # Connect to the database
-connection = sqlite3.connect('phoenix.db')
+connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
 
 # Function to close the form

@@ -1,10 +1,12 @@
 import tkinter as tk
 from tkinter import ttk
 import sqlite3
+import sys
+from config import DB_PATH
 from tkinter import messagebox
 
 # Database connection
-conn = sqlite3.connect('phoenix.db')  # Replace with the actual path to your database
+conn = sqlite3.connect(DB_PATH)  # Replace with the actual path to your database
 cursor = conn.cursor()
 
 def add_document_type():

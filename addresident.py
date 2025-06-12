@@ -2,9 +2,10 @@ import tkinter as tk
 from tkinter import ttk
 import sqlite3
 import sys
+from config import DB_PATH
 
 # Connect to the database
-conn = sqlite3.connect('phoenix.db')
+conn = sqlite3.connect(DB_PATH)
 c = conn.cursor()
 
 # Check if an id is passed as a command-line argument

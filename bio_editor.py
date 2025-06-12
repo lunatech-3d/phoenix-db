@@ -2,10 +2,11 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
+import sys
+from config import DB_PATH
 import os
 from context_menu import create_context_menu
 
-DB_PATH = "phoenix.db"
 
 def create_embedded_bio_editor(parent, bio_text_from_db, person_id):
     section_frame = ttk.Frame(parent)

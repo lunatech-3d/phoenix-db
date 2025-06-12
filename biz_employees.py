@@ -3,8 +3,7 @@ from tkinter import ttk, messagebox
 import sqlite3
 from date_utils import parse_date_input, format_date_for_display
 from biz_linkage import open_biz_linkage_popup
-
-DB_PATH = "phoenix.db"
+from config import DB_PATH
 
 class EmployeeForm:
     def __init__(self, root, person_id=None, employment_id=None, biz_id=None):        

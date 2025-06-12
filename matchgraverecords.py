@@ -1,12 +1,14 @@
 import sqlite3
 import tkinter as tk
+import sys
+from config import DB_PATH, PATHS
 from tkinter import ttk, messagebox
 import webbrowser
 import subprocess
 
 
 # Connect to the database
-connection = sqlite3.connect('Phoenix.db')
+connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
 
 # Fetch potential matches from the StagingFindAGrave table

@@ -9,9 +9,10 @@ from datetime import datetime
 import subprocess
 from PIL import Image, ImageTk
 from context_menu import create_context_menu
+from config import DB_PATH
 
 # Connect to the database
-connection = sqlite3.connect('phoenix.db')
+connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
 
 def get_custom_list(list_name):

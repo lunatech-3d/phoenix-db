@@ -2,6 +2,8 @@ import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
 import json
+import sys
+from config import DB_PATH
 import requests
 from PIL import Image, ImageTk
 from io import BytesIO
@@ -48,7 +50,7 @@ class MapViewer:
     def __init__(self, parent):
         print("Initializing MapViewer...")
         try:
-            self.connection = sqlite3.connect('phoenix.db')
+            self.connection = sqlite3.connect(DB_PATH)
             self.cursor = self.connection.cursor()
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", f"Failed to connect to database: {str(e)}")

@@ -2,9 +2,11 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
+import sys
+from config import DB_PATH, PATHS
 from datetime import datetime
 
-connection = sqlite3.connect('phoenix.db')
+connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
 
 

@@ -2,10 +2,12 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 from datetime import datetime
+import sys
+from config import DB_PATH  
 import sqlite3
 
 
-connection = sqlite3.connect('phoenix.db')
+connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
 
 current_sort_column = "Last Name"

@@ -3,6 +3,7 @@ from tkinter import ttk, font
 from PIL import Image, ImageTk
 import sqlite3
 import sys
+from config import DB_PATH
 import webbrowser
 import subprocess
 from tkinter import filedialog
@@ -114,7 +115,7 @@ def edit_mayor_form():
 
     id = sys.argv[1]
     
-    connection = sqlite3.connect('phoenix.db')
+    connection = sqlite3.connect(DB_PATH)
     cursor = connection.cursor()
 
     edit_mode = False

@@ -3,6 +3,7 @@ import sys
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
+from config import DB_PATH
 
 # Retrieve the arguments
 person_id = int(sys.argv[1])
@@ -19,7 +20,7 @@ print("Last Name:", last_name)
 print("Married Name:", married_name)
 
 # Connect to the database
-connection = sqlite3.connect('phoenix.db')
+connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
 
 def add_census_record():

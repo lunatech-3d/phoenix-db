@@ -1,9 +1,9 @@
 
 import tkinter as tk
+import sys
+from config import DB_PATH
 from tkinter import ttk
 import sqlite3
-
-DB_PATH = "phoenix.db"
 
 def open_biz_linkage_popup(callback):
     def refresh_tree():

@@ -1,3 +1,6 @@
+import sys
+from config import DB_PATH
+
 def create_family_tab(notebook, person_id):
 
     # Add the Family tab
@@ -49,7 +52,7 @@ def create_family_tab(notebook, person_id):
     tree_text = tk.Text(frame_tree, width=80, height=40)
     tree_text.grid(row=0, column=0, sticky='nsew')  # fill both directions, allow widget to expand
 
-    connection = sqlite3.connect('phoenix.db')
+    connection = sqlite3.connect(DB_PATH)
     cursor = connection.cursor()
 
     # Function to recursively fetch and build the family tree

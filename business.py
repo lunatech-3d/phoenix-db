@@ -1,11 +1,11 @@
 # business.py
 import tkinter as tk
+import sys
+from config import DB_PATH
 from tkinter import ttk, messagebox
 from date_utils import format_date_for_display
 import sqlite3
 import webbrowser
-
-DB_PATH = "phoenix.db"
 
 class BusinessManager:
     def __init__(self, root):

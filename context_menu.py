@@ -2,6 +2,8 @@
 
 import tkinter as tk
 from tkinter import ttk
+import sys
+from config import PATHS, DB_PATH
 import subprocess
 
 def paste_from_clipboard(entry):
@@ -15,9 +17,8 @@ def add_a_source(id, first_name, middle_name, last_name, married_name):
     full_name = f"{first_name} {' ' + middle_name if middle_name else ''} {last_name}"
     if married_name:
         full_name += f" (née {married_name})"
-    command = ['python', 'c:\\sqlite\\citations.py', str(id), full_name]
-    # Call the script with subprocess.run
-    subprocess.run(command)   
+    command = [sys.executable, str(PATHS.citations), str(id), full_name]
+    subprocess.run(command)  
 
 
 def insert_custom_entry(entry, text):

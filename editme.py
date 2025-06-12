@@ -22,6 +22,7 @@ from person_linkage import open_person_linkage_popup
 from bio_editor import create_embedded_bio_editor
 from obituary_editor import create_embedded_obituary_editor
 from life_events_editor import create_embedded_life_events
+from config import DB_PATH, PATHS
 
 
 from editbiz import EditBusinessForm
@@ -73,7 +74,7 @@ from map_control import MapController
 #from map_control import load_sections, load_boundary, load_placemarks
 
 # Connect to the database
-connection = sqlite3.connect('Phoenix.db')
+connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
 connection_open = True
 

@@ -34,3 +34,7 @@ This file includes:
 - Primary and foreign key notes
 
 This documentation is automatically updated as part of the development process.
+
+## Configuration
+
+Path handling is centralized in `config.py`. The module defines `DB_PATH` and helper script locations relative to the repository root so code no longer hard-codes file paths. Update these constants if you move the database or scripts.

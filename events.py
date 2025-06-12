@@ -1,10 +1,10 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
+import sys
+from config import DB_PATH
 import subprocess
 from date_utils import format_date_for_display
-
-DB_PATH = "phoenix.db"
 
 class EventBrowser:
     def __init__(self, master):

@@ -3,11 +3,12 @@ import sys
 import subprocess
 import tkinter as tk
 import re
+from config import DB_PATH, PATHS
 from datetime import datetime
 from tkinter import ttk, messagebox
 
 # Connect to the database
-connection = sqlite3.connect('Phoenix.db')
+connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
 
 def load_organizations_dropdown():

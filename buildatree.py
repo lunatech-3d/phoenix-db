@@ -3,9 +3,11 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
 import sys
+from config import DB_PATH
+
 
 # Connect to the database
-connection = sqlite3.connect('phoenix.db')
+connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
 
 # Function to recursively fetch and build the family tree

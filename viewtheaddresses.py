@@ -1,9 +1,11 @@
 import sqlite3
 import tkinter as tk
+import sys
+from config import DB_PATH, PATHS
 from tkinter import ttk
 
 # Connect to the database
-conn = sqlite3.connect('phoenix.db')
+conn = sqlite3.connect(DB_PATH)
 c = conn.cursor()
 
 # Function to close the form

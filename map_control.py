@@ -1,9 +1,11 @@
 import folium
 import logging
 import os
+import sys
 import webbrowser
 import sqlite3
 import geopandas as gpd
+from config import DB_PATH
 from datetime import datetime
 from shapely.geometry import Polygon
 
@@ -27,7 +29,7 @@ class MapController:
         self.setup_logging()
         
         try:
-            self.connection = sqlite3.connect('c:/sqlite/phoenix.db')
+            self.connection = sqlite3.connect(DB_PATH)
             self.cursor = self.connection.cursor()
             self.active_layers = {}
             self.logger.info("MapController initialized successfully")

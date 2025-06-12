@@ -1,11 +1,13 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
+import sys
+from config import DB_PATH, PATHS
 import subprocess
 
 def fetch_sources():
     """ Fetches source titles and ids from the database for the dropdown """
-    conn = sqlite3.connect('c:\\sqlite\\phoenix.db')
+    conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     cur.execute("SELECT title FROM Sources")  # Fetching only titles
     sources = cur.fetchall()
@@ -19,8 +21,8 @@ def update_sources_dropdown():
     source_dropdown['values'] = [source[0] for source in sources]  # Set only titles
 
 def manage_sources():
-    """ Launches the external sources.py script """
-    subprocess.run(['python', 'c:\\sqlite\\sources.py'])
+    """Launch the external sources.py script."""
+    subprocess.run([sys.executable, str(PATHS.sources)])
 
 
 def add_citation():

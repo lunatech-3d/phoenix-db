@@ -1,13 +1,15 @@
 import tkinter as tk
 from tkinter import ttk
 import sqlite3
+import sys
+from config import DB_PATH, PATHS
 from tkinter import messagebox
 
 def refresh_sources():
     """ Fetch sources from the database and update the tree view """
     for i in tree.get_children():
         tree.delete(i)
-    conn = sqlite3.connect('c:\\sqlite\\phoenix.db')
+    conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     cur.execute("SELECT id, title, author, publisher, pub_date, note FROM Sources")
     for row in cur.fetchall():
@@ -18,7 +20,7 @@ def add_source():
     """ Open a new window to add a source """
     def save_new_source():
         # Implement saving logic here
-        conn = sqlite3.connect('c:\\sqlite\\phoenix.db')
+        conn = sqlite3.connect(DB_PATH)
         cur = conn.cursor()
         cur.execute("INSERT INTO Sources (title, author, publisher, pub_date, note) VALUES (?, ?, ?, ?, ?)",
                     (title_entry.get(), author_entry.get(), publisher_entry.get(), pub_date_entry.get(), note_entry.get()))
@@ -61,7 +63,7 @@ def edit_source():
     if selected_item:  # Check if something is selected
         source_id = tree.item(selected_item, "values")[0]
         # Fetch source details from the database
-        conn = sqlite3.connect('c:\\sqlite\\phoenix.db')
+        conn = sqlite3.connect(DB_PATH)
         cur = conn.cursor()
         cur.execute("SELECT title, author, publisher, pub_date, note FROM Sources WHERE id = ?", (source_id,))
         source_data = cur.fetchone()
@@ -101,7 +103,7 @@ def edit_source():
         def save_edited_source():
             # Update source in the database
             try:
-                conn = sqlite3.connect('c:\\sqlite\\phoenix.db')
+                conn = sqlite3.connect(DB_PATH)
                 cur = conn.cursor()
                 cur.execute("UPDATE Sources SET title = ?, author = ?, publisher = ?, pub_date = ?, note = ? WHERE id = ?",
                             (title_entry.get(), author_entry.get(), publisher_entry.get(), pub_date_entry.get(), note_entry.get(), source_id))
@@ -126,7 +128,7 @@ def delete_source():
         source_id = tree.item(selected_item, "values")[0]
         if messagebox.askyesno("Confirm Deletion", "Are you sure you want to delete this source?"):
             try:
-                conn = sqlite3.connect('c:\\sqlite\\phoenix.db')
+                conn = sqlite3.connect(DB_PATH)
                 cur = conn.cursor()
                 cur.execute("DELETE FROM Sources WHERE id = ?", (source_id,))
                 conn.commit()

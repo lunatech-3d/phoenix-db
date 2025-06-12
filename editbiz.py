@@ -5,6 +5,8 @@ import subprocess
 import sqlite3
 import webbrowser
 import urllib.parse
+import sys 
+from config import DB_PATH
 from datetime import datetime
 from date_utils import parse_date_input, format_date_for_display, date_sort_key
 from context_menu import create_context_menu, apply_context_menu_to_all_entries
@@ -12,8 +14,6 @@ from person_linkage import person_search_popup
 from biz_employees import open_employee_editor
 from biz_linkage import open_biz_linkage_popup
 
-
-DB_PATH = "phoenix.db"
 connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
 
@@ -58,6 +58,8 @@ class EditBusinessForm:
             self.load_locations()
             self.load_employees()
             self.load_bizevents()
+        else:
+            self.disable_related_sections()
     
 
     def open_linked_business(self, field):
@@ -215,10 +217,14 @@ class EditBusinessForm:
 
         owner_btns = ttk.Frame(self.owner_frame)
         owner_btns.pack(side="bottom", fill="x")
-        ttk.Button(owner_btns, text="Add", command=self.add_owner).pack(side="left", padx=5)
-        ttk.Button(owner_btns, text="Edit", command=self.edit_owner).pack(side="left", padx=5)
-        ttk.Button(owner_btns, text="Delete", command=self.delete_owner).pack(side="left", padx=5)
-
+        
+        self.owner_add_btn = ttk.Button(owner_btns, text="Add", command=self.add_owner)
+        self.owner_add_btn.pack(side="left", padx=5)
+        self.owner_edit_btn = ttk.Button(owner_btns, text="Edit", command=self.edit_owner)
+        self.owner_edit_btn.pack(side="left", padx=5)
+        self.owner_del_btn = ttk.Button(owner_btns, text="Delete", command=self.delete_owner)
+        self.owner_del_btn.pack(side="left", padx=5)
+        
         # 2- Setup of the Location Tree Section
         self.location_frame = ttk.LabelFrame(self.master, text="Locations")
         self.location_frame.pack(fill="both", expand=False, padx=10, pady=5)
@@ -241,10 +247,14 @@ class EditBusinessForm:
 
         location_btns = ttk.Frame(self.location_frame)
         location_btns.pack(side="bottom", fill="x")
-        ttk.Button(location_btns, text="Add", command=self.add_location).pack(side="left", padx=5)
-        ttk.Button(location_btns, text="Edit", command=self.edit_location).pack(side="left", padx=5)
-        ttk.Button(location_btns, text="Delete", command=self.delete_location).pack(side="left", padx=5)
-
+        
+        self.location_add_btn = ttk.Button(location_btns, text="Add", command=self.add_location)
+        self.location_add_btn.pack(side="left", padx=5)
+        self.location_edit_btn = ttk.Button(location_btns, text="Edit", command=self.edit_location)
+        self.location_edit_btn.pack(side="left", padx=5)
+        self.location_del_btn = ttk.Button(location_btns, text="Delete", command=self.delete_location)
+        self.location_del_btn.pack(side="left", padx=5)
+        
         # 3 - Setup of the Employee Tree Section
         self.employee_frame = ttk.LabelFrame(self.master, text="Employees")
         self.employee_frame.pack(fill="both", expand=False, padx=10, pady=5)
@@ -270,9 +280,13 @@ class EditBusinessForm:
 
         emp_btns = ttk.Frame(self.employee_frame)
         emp_btns.pack(side="bottom", fill="x")
-        ttk.Button(emp_btns, text="Add", command=self.add_employee).pack(side="left", padx=5)
-        ttk.Button(emp_btns, text="Edit", command=self.edit_employee).pack(side="left", padx=5)
-        ttk.Button(emp_btns, text="Delete", command=self.delete_employee).pack(side="left", padx=5)
+        
+        self.employee_add_btn = ttk.Button(emp_btns, text="Add", command=self.add_employee)
+        self.employee_add_btn.pack(side="left", padx=5)
+        self.employee_edit_btn = ttk.Button(emp_btns, text="Edit", command=self.edit_employee)
+        self.employee_edit_btn.pack(side="left", padx=5)
+        self.employee_del_btn = ttk.Button(emp_btns, text="Delete", command=self.delete_employee)
+        self.employee_del_btn.pack(side="left", padx=5)
 
         # 4 - Setup of the Business Events Section
         self.bizevents_frame = ttk.LabelFrame(self.master, text="Business Events")
@@ -300,11 +314,42 @@ class EditBusinessForm:
 
         bizevents_btns = ttk.Frame(self.bizevents_frame)
         bizevents_btns.pack(side="bottom", fill="x")
-        ttk.Button(bizevents_btns, text="Add", command=self.add_bizevent).pack(side="left", padx=5)
-        ttk.Button(bizevents_btns, text="Edit", command=self.edit_bizevent).pack(side="left", padx=5)
-        ttk.Button(bizevents_btns, text="Delete", command=self.delete_bizevent).pack(side="left", padx=5)
+        
+        self.event_add_btn = ttk.Button(bizevents_btns, text="Add", command=self.add_bizevent)
+        self.event_add_btn.pack(side="left", padx=5)
+        self.event_edit_btn = ttk.Button(bizevents_btns, text="Edit", command=self.edit_bizevent)
+        self.event_edit_btn.pack(side="left", padx=5)
+        self.event_del_btn = ttk.Button(bizevents_btns, text="Delete", command=self.delete_bizevent)
+        self.event_del_btn.pack(side="left", padx=5)
   
         apply_context_menu_to_all_entries(self.master)
+
+    def disable_related_sections(self):
+        widgets = [
+            self.owner_tree, self.owner_add_btn, self.owner_edit_btn, self.owner_del_btn,
+            self.location_tree, self.location_add_btn, self.location_edit_btn, self.location_del_btn,
+            self.employee_tree, self.employee_add_btn, self.employee_edit_btn, self.employee_del_btn,
+            self.bizevents_tree, self.event_add_btn, self.event_edit_btn, self.event_del_btn,
+        ]
+        for w in widgets:
+            try:
+                w.state(["disabled"])
+            except tk.TclError:
+                w.config(state="disabled")
+
+    def enable_related_sections(self):
+        widgets = [
+            self.owner_tree, self.owner_add_btn, self.owner_edit_btn, self.owner_del_btn,
+            self.location_tree, self.location_add_btn, self.location_edit_btn, self.location_del_btn,
+            self.employee_tree, self.employee_add_btn, self.employee_edit_btn, self.employee_del_btn,
+            self.bizevents_tree, self.event_add_btn, self.event_edit_btn, self.event_del_btn,
+        ]
+        for w in widgets:
+            try:
+                w.state(["!disabled"])
+            except tk.TclError:
+                w.config(state="normal")
+
 
     #
     #Support Functions for #1 - Owner Tree
@@ -1437,6 +1482,7 @@ class EditBusinessForm:
             start_date, start_prec = parse_date_input(data["start_date"])
             end_date, end_prec = parse_date_input(data["end_date"]) if data.get("end_date") else ("", "")
 
+            new_record = self.biz_id is None
             if self.biz_id:  # Update
                 self.cursor.execute("""
                     UPDATE Biz SET
@@ -1475,6 +1521,9 @@ class EditBusinessForm:
             )
 
             self.conn.commit()
+            if new_record:
+                self.enable_related_sections()
+
             messagebox.showinfo("Saved", "Business record updated.", parent=self.master)
             self.master.lift()
             self.master.focus_force()

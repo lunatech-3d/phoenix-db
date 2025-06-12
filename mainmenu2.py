@@ -3,13 +3,14 @@ import sys
 import csv
 import subprocess
 import tkinter as tk
+from config import DB_PATH
 from tkinter import messagebox
 from tkinter import ttk
 from tkinter import filedialog
 from PIL import ImageTk, Image
 
 # Connect to the database
-connection = sqlite3.connect('phoenix.db')
+connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
 
 # Function to close the form

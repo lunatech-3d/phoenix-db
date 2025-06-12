@@ -1,12 +1,12 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
+import sys
+from config import DB_PATH
 import webbrowser
 from datetime import datetime
 from context_menu import create_context_menu
 from date_utils import parse_date_input, format_date_for_display
-
-DB_PATH = "phoenix.db"
 
 def open_link(link):
     if link:

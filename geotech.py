@@ -1,11 +1,13 @@
 import sqlite3
 import json
+import sys
+from config import DB_PATH
 from pathlib import Path
 import webbrowser
 
 # Define paths
 script_dir = Path(__file__).resolve().parent
-database_path = script_dir / 'phoenix.db'
+database_path = script_dir / DB_PATH
 output_html_path = script_dir / 'interactive_map.html'
 
 # Function to get unique asset types from database

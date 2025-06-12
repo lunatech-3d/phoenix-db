@@ -2,11 +2,12 @@ import sqlite3
 import sys
 import subprocess
 import tkinter as tk
+from config import DB_PATH, PATHS
 from tkinter import messagebox
 from tkinter import ttk
 
 # Connect to the database
-connection = sqlite3.connect('phoenix.db')
+connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
 
 # Define initial sort column and order
