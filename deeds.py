@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
+import sys
+from config import DB_PATH
 from edit_deed_dialog import EditDeedDialog
 from add_deed_dialog import AddDeedDialog
 from geodata import (
@@ -147,7 +149,7 @@ def load_deed_records(cursor, tree, person_id):
 
 def add_deed_record(deed_tree, person_id):
     def refresh():
-        connection = sqlite3.connect('phoenix.db')
+        connection = sqlite3.connect(DB_PATH)
         load_deed_records(connection.cursor(), deed_tree, person_id)
     dialog = AddDeedDialog(deed_tree.winfo_toplevel(), person_id)
     dialog.dialog.transient(deed_tree.winfo_toplevel())

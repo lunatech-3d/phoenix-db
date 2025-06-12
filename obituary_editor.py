@@ -22,7 +22,7 @@ def create_embedded_obituary_editor(parent, person_id):
     cursor.execute("""
         SELECT obit_id, source_title, obit_text, date_published, date_precision, source_link
         FROM Obituaries
-        WHERE person_id = ?
+        WHERE person_id = ? AND obit_text IS NOT NULL AND TRIM(obit_text) != ''
         ORDER BY date_published ASC LIMIT 1
     """, (person_id,))
     record = cursor.fetchone()

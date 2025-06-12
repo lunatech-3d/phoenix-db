@@ -2261,8 +2261,8 @@ frame_overview.bind("<FocusIn>", lambda e: populate_spouse_dropdown(record_id))
 # Create the Bio tab if the bio is not empty
 # TODO - we will need to reset - it is now out of range
 person_id = person_record[0]
-bio = person_record[21]
-create_narrative_tab(notebook, person_record[21], person_record[0])
+bio = person_record[20]
+create_narrative_tab(notebook, bio, person_id)
 
 # Add the Family tab
 # create_family_tab(notebook, person_record[0])
