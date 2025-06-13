@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 import sqlite3
 from datetime import datetime
 from context_menu import create_context_menu
+from person_search import search_people
 import re
 
 class AddDeedDialog:
@@ -911,34 +912,20 @@ class PersonSearchDialog:
         connection = sqlite3.connect('phoenix.db')
         cursor = connection.cursor()
         
-        query = """
-            SELECT id, first_name, middle_name, last_name, married_name, 
-                   birth_date, death_date 
-            FROM People 
-            WHERE id != ?
-        """
-        parameters = [self.current_person_id]
-        
-        if first_name:
-            query += " AND first_name LIKE ?"
-            parameters.append(f"{first_name}%")
-        if last_name:
-            query += " AND (last_name LIKE ? OR married_name LIKE ?)"
-            parameters.append(f"{last_name}%")
-            parameters.append(f"{last_name}%")
-            
-        query += " ORDER BY last_name, first_name, birth_date"
-        
         try:
-            cursor.execute(query, parameters)
-            results = cursor.fetchall()
+            results = search_people(
+                cursor,
+                first_name=first_name,
+                last_name=last_name
+            )
+            results = [r for r in results if r[0] != self.current_person_id]
             
             for item in self.tree.get_children():
                 self.tree.delete(item)
-            
+
             for row in results:
                 self.tree.insert('', 'end', values=row)
-                
+                        
         finally:
             cursor.close()
             connection.close()

@@ -4,6 +4,7 @@ import sqlite3
 import sys
 from config import DB_PATH
 from context_menu import create_context_menu
+from person_search import search_people as lookup_people
 
 # Connect to the database
 connection = sqlite3.connect(DB_PATH)
@@ -64,12 +65,11 @@ def close_form():
 
 def search_people(last_name_entry, person_dropdown):
     last_name = last_name_entry.get().strip()
-    cursor.execute("SELECT id, first_name, last_name, birth_date FROM People WHERE last_name LIKE ?", (f'%{last_name}%',))
-    results = cursor.fetchall()
-
-    # Update dropdown options
-    person_dropdown['values'] = [f"{person[0]}: {person[1]} {person[2]} | born - {person[3]}" for person in results]
-
+    results = lookup_people(cursor, last_name=last_name)
+    person_dropdown['values'] = [
+        f"{person[0]}: {person[1]} {person[2]} | born - {person[5]}" for person in results
+    ]
+    
 def fetch_people_data():
     cursor.execute("SELECT id, last_name, first_name, birth_date FROM People ORDER BY last_name, first_name")
     return [f"{row[0]}: {row[1]}, {row[2]} ({row[3]})" for row in cursor.fetchall()]

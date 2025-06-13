@@ -4,7 +4,7 @@ from tkinter import ttk, messagebox
 import sqlite3
 import sys
 from config import DB_PATH, PATHS
-from datetime import datetime
+from person_search import search_people
 
 connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
@@ -16,24 +16,15 @@ def person_search_popup(callback):
         mname = mname_var.get().strip()
         lname = lname_var.get().strip()
 
-        query = """
-        SELECT id, first_name, middle_name, last_name, married_name, birth_date, death_date
-        FROM People
-        WHERE 1=1
-        """
-        params = []
-        if fname:
-            query += " AND first_name LIKE ?"
-            params.append(f"%{fname}%")
-        if mname:
-            query += " AND middle_name LIKE ?"
-            params.append(f"%{mname}%")
-        if lname:
-            query += " AND (last_name LIKE ? OR married_name LIKE ?)"
-            params.extend([f"%{lname}%", f"%{lname}%"])
+        results = search_people(
+            cursor,
+            first_name=fname,
+            middle_name=mname,
+            last_name=lname
+        )
 
         tree.delete(*tree.get_children())
-        for row in cursor.execute(query, params):
+        for row in results:
             tree.insert("", "end", values=row)
 
     def select_person():
@@ -168,23 +159,13 @@ def open_person_linkage_popup(parent_id, role="child", refresh_callback=None):
         tree.delete(*tree.get_children())
         filters = {k: v.get().strip() for k, v in search_vars.items() if v.get().strip()}
 
-        query = "SELECT id, first_name, middle_name, last_name, married_name, birth_date, death_date FROM People WHERE 1=1"
-        params = []
-
         if not use_full_database:
-            query += " AND (last_name = (SELECT last_name FROM People WHERE id = ?))"
-            params.append(parent_id)
+            cursor.execute("SELECT last_name FROM People WHERE id = ?", (parent_id,))
+            row = cursor.fetchone()
+            if row:
+                filters['last_name'] = row[0]
 
-        for k, v in filters.items():
-            if k == 'last_name':
-                query += " AND (last_name LIKE ? OR married_name LIKE ?)"
-                params.extend([f"%{v}%", f"%{v}%"])
-            else:
-                query += f" AND {k} LIKE ?"
-                params.append(f"%{v}%")
-
-        cursor.execute(query, tuple(params))
-        results = cursor.fetchall()
+        results = search_people(cursor, **filters)
 
         def extract_year(date_str):
             try:

@@ -671,7 +671,11 @@ class EditBusinessForm:
         if existing:
             for key, value in zip(fields, existing):
                 widget = self.location_entries.get(key)
-                if widget:
+                if not widget:
+                    continue
+                if isinstance(widget, ttk.Combobox):
+                    widget.set(value)
+                else:
                     widget.delete(0, tk.END)
                     widget.insert(0, value)
 
@@ -706,21 +710,33 @@ class EditBusinessForm:
 
             try:
                 if self.location_existing:
-                    # Parse original start_date from display to match record for update
+                    original_address = self.location_existing[0]
+                    self.cursor.execute(
+                        "SELECT address_id FROM Address WHERE address = ? LIMIT 1",
+                        (original_address,)
+                    )
+                    result = self.cursor.fetchone()
+                    if not result:
+                        messagebox.showerror("Error", "Original address not found.")
+                        return
+                    original_address_id = result[0]
                     original_display_start = self.location_existing[1]
                     original_start_date, _ = parse_date_input(original_display_start)
 
                     self.cursor.execute("""
                         UPDATE BizLocHistory
-                        SET start_date = ?, start_date_precision = ?,
+                        SET address_id = ?,
+                            start_date = ?, start_date_precision = ?,
                             end_date = ?, end_date_precision = ?,
                             notes = ?, url = ?
-                        WHERE biz_id = ? AND address_id = ? AND start_date = ?
+                        WHERE biz_id = ? AND address_id = ?
                     """, (
+                        address_id,              # new address
                         start_date, start_prec,
                         end_date, end_prec,
                         notes, url,
-                        self.biz_id, address_id, original_start_date
+                        self.biz_id,             # old keys for matching
+                        original_address_id
                     ))
                 else:
                     self.cursor.execute("""

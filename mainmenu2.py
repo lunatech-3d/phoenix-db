@@ -8,6 +8,7 @@ from tkinter import messagebox
 from tkinter import ttk
 from tkinter import filedialog
 from PIL import ImageTk, Image
+from person_search import search_people
 
 # Connect to the database
 connection = sqlite3.connect(DB_PATH)
@@ -116,32 +117,23 @@ def populate_tree(records):
         
 def search_by_name():
     first_name = entry_first_name.get().strip()
-    middle_name = entry_middle_name.get().strip()  # FIXED: .strip()
+    middle_name = entry_middle_name.get().strip()
     last_name = entry_last_name.get().strip()
 
-    query = "SELECT * FROM People WHERE "
-    parameters = []
-    conditions = []
-
-    if last_name:
-        conditions.append("(last_name LIKE ? OR married_name LIKE ?)")
-        parameters.extend([f"{last_name}%", f"{last_name}%"])
-
-    if first_name:
-        conditions.append("first_name LIKE ?")
-        parameters.append(f"{first_name}%")
-
-    if middle_name:
-        conditions.append("middle_name LIKE ?")
-        parameters.append(f"{middle_name}%")
-
-    if not conditions:
-        messagebox.showinfo("No Input", "Please enter a first name, middle name, or last name.")
+    if not (first_name or middle_name or last_name):
+        messagebox.showinfo(
+            "No Input",
+            "Please enter a first name, middle name, or last name."
+        )
         return
 
-    query += " AND ".join(conditions)
-
-    display_records(query, parameters)
+    records = search_people(
+        cursor,
+        first_name=first_name,
+        middle_name=middle_name,
+        last_name=last_name
+    )
+    populate_tree(records)
 
 
 def clear_search_fields():
@@ -156,20 +148,10 @@ def search_by_record_number():
     try:
         record_number = int(record_number)
 
-        # The new query and parameters for the search
-        query = "SELECT * FROM People WHERE id = ?"
-        parameters = [record_number] 
-
-        cursor.execute(query, parameters)
-        records = cursor.fetchall()
-
-        #print("Query results:", records)  # Debugging line to check the fetched records
+        records = search_people(cursor, record_id=record_number)
 
         if records:
-            # Clear the treeview before populating with new records
             tree.delete(*tree.get_children())
-
-            # Populate the tree with the fetched record
             populate_tree(records)
         else:
             print("No records found for the provided record number.")
