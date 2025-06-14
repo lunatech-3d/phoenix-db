@@ -1,13 +1,21 @@
 import sqlite3
 from typing import List, Any
 
-def search_people(cursor: sqlite3.Cursor, **criteria) -> List[tuple]:
+def search_people(
+    cursor: sqlite3.Cursor,
+    columns: str = "*",
+    **criteria,
+) -> List[tuple]:
+    
     """Search the People table using dynamic criteria.
 
     Parameters
     ----------
     cursor : sqlite3.Cursor
         Cursor connected to the database.
+    columns : str, optional
+        Comma-separated list of columns to select. Defaults to ``"*"``
+        which returns every field.
     **criteria : dict
         Fields to filter by. Supported keys include ``first_name``,
         ``middle_name``, ``last_name``, ``married_name`` and ``record_id``.
@@ -18,10 +26,7 @@ def search_people(cursor: sqlite3.Cursor, **criteria) -> List[tuple]:
     list of tuple
         Matching rows ordered by last and first name.
     """
-    query = (
-        "SELECT id, first_name, middle_name, last_name, married_name, "
-        "birth_date, death_date FROM People WHERE 1=1"
-    )
+    query = f"SELECT {columns} FROM People WHERE 1=1"
     params: List[Any] = []
 
     # Record ID (exact match)

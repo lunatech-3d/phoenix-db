@@ -18,9 +18,10 @@ def person_search_popup(callback):
 
         results = search_people(
             cursor,
+            columns="id, first_name, middle_name, last_name, married_name, birth_date, death_date",
             first_name=fname,
             middle_name=mname,
-            last_name=lname
+            last_name=lname,
         )
 
         tree.delete(*tree.get_children())
@@ -165,7 +166,11 @@ def open_person_linkage_popup(parent_id, role="child", refresh_callback=None):
             if row:
                 filters['last_name'] = row[0]
 
-        results = search_people(cursor, **filters)
+        results = search_people(
+            cursor,
+            columns="id, first_name, middle_name, last_name, married_name, birth_date, death_date",
+            **filters,
+        )
 
         def extract_year(date_str):
             try:

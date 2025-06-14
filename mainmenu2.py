@@ -129,9 +129,10 @@ def search_by_name():
 
     records = search_people(
         cursor,
+        columns="*",
         first_name=first_name,
         middle_name=middle_name,
-        last_name=last_name
+        last_name=last_name,
     )
     populate_tree(records)
 
@@ -147,8 +148,11 @@ def search_by_record_number():
     record_number = entry_record_number.get().strip()
     try:
         record_number = int(record_number)
-
-        records = search_people(cursor, record_id=record_number)
+        records = search_people(
+            cursor,
+            columns="*",
+            record_id=record_number,
+        )
 
         if records:
             tree.delete(*tree.get_children())

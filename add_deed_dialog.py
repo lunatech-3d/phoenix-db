@@ -915,8 +915,9 @@ class PersonSearchDialog:
         try:
             results = search_people(
                 cursor,
+                columns="id, first_name, middle_name, last_name, married_name, birth_date, death_date",
                 first_name=first_name,
-                last_name=last_name
+                last_name=last_name,
             )
             results = [r for r in results if r[0] != self.current_person_id]
             
@@ -925,7 +926,7 @@ class PersonSearchDialog:
 
             for row in results:
                 self.tree.insert('', 'end', values=row)
-                        
+
         finally:
             cursor.close()
             connection.close()

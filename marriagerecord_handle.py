@@ -65,7 +65,11 @@ def close_form():
 
 def search_people(last_name_entry, person_dropdown):
     last_name = last_name_entry.get().strip()
-    results = lookup_people(cursor, last_name=last_name)
+    results = lookup_people(
+        cursor,
+        columns="id, first_name, middle_name, last_name, married_name, birth_date, death_date",
+        last_name=last_name,
+    )
     person_dropdown['values'] = [
         f"{person[0]}: {person[1]} {person[2]} | born - {person[5]}" for person in results
     ]

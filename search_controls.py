@@ -96,9 +96,10 @@ class SearchControls:
 
         records = search_people(
             self.cursor,
+            columns="id, first_name, middle_name, last_name, married_name, birth_date, death_date",
             first_name=first_name,
             middle_name=middle,
-            last_name=last_name
+            last_name=last_name,
         )
         self.populate_tree(records)
 
@@ -109,7 +110,11 @@ class SearchControls:
         record_number = self.entry_record_number.get().strip()
         try:
             record_number = int(record_number)
-            records = search_people(self.cursor, record_id=record_number)
+            records = search_people(
+                self.cursor,
+                columns="id, first_name, middle_name, last_name, married_name, birth_date, death_date",
+                record_id=record_number,
+            )
             self.populate_tree(records)
         except ValueError:
             messagebox.showerror("Invalid Input", "Please enter a valid record number.")
