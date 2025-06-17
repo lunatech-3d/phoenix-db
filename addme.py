@@ -42,8 +42,8 @@ def add_record():
     title = entry_title.get().strip()
     nick_name = entry_nick_name.get().strip()
     married_name = entry_married_name.get().strip()
-    #father = int(entry_father.get().strip()) if entry_father.get().strip() else None
-    #mother = int(entry_mother.get().strip()) if entry_mother.get().strip() else None
+    father = int(entry_father.get().strip()) if entry_father.get().strip() else None
+    mother = int(entry_mother.get().strip()) if entry_mother.get().strip() else None
     birth_date = entry_birth_date.get().strip()
     birth_location = entry_birth_location.get().strip()
     death_date = entry_death_date.get().strip()
@@ -63,16 +63,21 @@ def add_record():
     notes = entry_notes.get().strip()
 
     # Insert the record into the database
-    insert_query = "INSERT INTO People (first_name, middle_name, last_name, title, nick_name, married_name, " \
-               "birth_date, birth_location, death_date, death_location, death_cause, " \
-               "obit_link, buried_date, buried_location, buried_notes, buried_source, buried_link, " \
-               "buried_block, buried_tour_link, business, occupation, bio, notes) " \
-               "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    insert_query = (
+        "INSERT INTO People (first_name, middle_name, last_name, title, nick_name, married_name, father, mother, "
+        "birth_date, birth_location, death_date, death_location, death_cause, "
+        "obit_link, buried_date, buried_location, buried_notes, buried_source, buried_link, "
+        "buried_block, buried_tour_link, business, occupation, bio, notes) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    )
 
 
-    data = (first_name, middle_name, last_name, title, nick_name, married_name, 
-            birth_date, birth_location, death_date, death_location, death_cause, obit_link, buried_date, buried_location,
-            buried_notes, buried_source, buried_link, buried_block, buried_tour_link, business, occupation, bio, notes)
+    data = (
+        first_name, middle_name, last_name, title, nick_name, married_name, father, mother,
+        birth_date, birth_location, death_date, death_location, death_cause,
+        obit_link, buried_date, buried_location, buried_notes, buried_source,
+        buried_link, buried_block, buried_tour_link, business, occupation, bio, notes
+    )
 
     print(data)
     data = tuple("" if value == "" else value for value in data)
@@ -102,8 +107,8 @@ def add_record():
     entry_title.delete(0, tk.END)
     entry_nick_name.delete(0, tk.END)
     entry_married_name.delete(0, tk.END)
-    # entry_father.delete(0, tk.END)
-    # entry_mother.delete(0, tk.END)
+    entry_father.delete(0, tk.END)
+    entry_mother.delete(0, tk.END)
     entry_birth_date.delete(0, tk.END)
     entry_birth_location.delete(0, tk.END)
     entry_death_date.delete(0, tk.END)
@@ -186,22 +191,27 @@ separator = ttk.Separator(frame_newperson, orient='horizontal')
 separator.grid(row=2, columnspan=6, pady=10, sticky='ew')
 
 # Father entry
-# label_father = ttk.Label(frame_newperson, text="Father:")
-# label_father.grid(row=3, column=2, padx=5, pady=5)
-# entry_father = ttk.Entry(frame_newperson)
-# entry_father.grid(row=3, column=3, padx=5, pady=5)
+label_father = ttk.Label(frame_newperson, text="Father:")
+label_father.grid(row=3, column=2, padx=5, pady=5)
+entry_father = ttk.Entry(frame_newperson)
+entry_father.grid(row=3, column=3, padx=5, pady=5)
 
 # Mother entry
-# label_mother = ttk.Label(frame_newperson, text="Mother:")
-# label_mother.grid(row=3, column=4, padx=5, pady=5)
-# entry_mother = ttk.Entry(frame_newperson)
-# entry_mother.grid(row=3, column=5, padx=5, pady=5)
+label_mother = ttk.Label(frame_newperson, text="Mother:")
+label_mother.grid(row=3, column=4, padx=5, pady=5)
+entry_mother = ttk.Entry(frame_newperson)
+entry_mother.grid(row=3, column=5, padx=5, pady=5)
 
 # Birth Date entry
 label_birth_date = ttk.Label(frame_newperson, text="Birth Date:")
 label_birth_date.grid(row=4, column=0, padx=5, pady=5)
 entry_birth_date = ttk.Entry(frame_newperson)
 entry_birth_date.grid(row=4, column=1, padx=5, pady=5)
+
+if prefill_father is not None:
+    entry_father.insert(0, str(prefill_father))
+if prefill_mother is not None:
+    entry_mother.insert(0, str(prefill_mother))
 
 # Birth Location entry
 label_birth_location = ttk.Label(frame_newperson, text="Birth Location:")

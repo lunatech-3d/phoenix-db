@@ -70,6 +70,19 @@ from PIL import Image, ImageTk
 from context_menu import create_context_menu
 from date_utils import parse_date_input, format_date_for_display, add_date_format_menu
 from map_control import MapController
+import argparse
+
+parser = argparse.ArgumentParser(description="Edit a person or add a new one")
+parser.add_argument("id", nargs="?", help="Person ID or related person ID")
+parser.add_argument("--new-child", action="store_true", help="Add a new child")
+parser.add_argument("--new-father", action="store_true", help="Add a new father")
+parser.add_argument("--new-mother", action="store_true", help="Add a new mother")
+parser.add_argument("--new-person", action="store_true", help="Add a new person")
+args = parser.parse_args()
+
+if args.new_child or args.new_father or args.new_mother or args.new_person:
+    subprocess.Popen([sys.executable, "addme.py"])
+    sys.exit(0)
 
 #from map_control import load_sections, load_boundary, load_placemarks
 
@@ -218,7 +231,7 @@ def apply_context_menu_to_all_entries(container):
 def add_residence_rec(event=None):
     selected_item = tree.focus()
     record_id = tree.item(selected_item)['values'][0]
-    subprocess.Popen(["python", "addresident.py", str(record_id)])
+    subprocess.Popen([sys.executable, "addresident.py", str(record_id)])
 
 def update_spouse_name(person_id):
     # Query the Marriages table for the current person's spouse(s) along with birth and death dates
@@ -314,19 +327,19 @@ def open_spouse_record(event=None):
     spouse_id = entry_married_to.get()
     if spouse_id.isdigit():
         window.destroy()
-        subprocess.Popen(["python", "editme.py", str(spouse_id)])
+        subprocess.Popen([sys.executable, "editme.py", str(spouse_id)])
 
 def open_father_record(event=None):
     father_id = entry_father.get()
     if father_id.isdigit():
         window.destroy()
-        subprocess.Popen(["python", "editme.py", str(father_id)])
+        subprocess.Popen([sys.executable, "editme.py", str(father_id)])
 
 def open_mother_record(event=None):
     mother_id = entry_mother.get()
     if mother_id.isdigit():
         window.destroy()
-        subprocess.Popen(["python", "editme.py", str(mother_id)])
+        subprocess.Popen([sys.executable, "editme.py", str(mother_id)])
 
 def open_spouse_record():
     selected_spouse_info = spouse_dropdown.get()
@@ -334,14 +347,14 @@ def open_spouse_record():
         spouse_id = selected_spouse_info.split(':')[0].strip()
         if spouse_id.isdigit():
             window.destroy()
-            subprocess.Popen(["python", "editme.py", str(spouse_id)])
-
+            subprocess.Popen([sys.executable, "editme.py", str(spouse_id)])
+            
 def open_child_record(event=None):
     # Get the selected item from the Treeview
     selected_item = children_tree.focus()
     record_id = children_tree.item(selected_item)['values'][0]  # Assuming the first value is the ID
     window.destroy()
-    subprocess.Popen(["python", "editme.py", str(record_id)])         
+    subprocess.Popen([sys.executable, "editme.py", str(record_id)])        
 
 # Function to update the record in the database
 def update_record():
@@ -400,7 +413,7 @@ def update_record():
     #update_father_name()
 
 # Retrieve the record ID passed as a command-line argument
-record_id = sys.argv[1]
+record_id = args.id
 
 # Retrieve the record from the database
 query = f"SELECT id, first_name, middle_name, last_name, title, nick_name, married_name, father, mother, " \
@@ -1312,7 +1325,7 @@ def open_person_record(event):
     person_id = related_people_tree.item(selected_item, 'values')[0]  # Assuming ID is the 1st column
     
     # Open the editme.py script with the person's ID
-    subprocess.Popen(["python", "editme.py", str(person_id)])
+    subprocess.Popen([sys.executable, "editme.py", str(person_id)])
 
 # -------------------------------   
 # START OF THE MEDIA TAB CODE
@@ -1443,7 +1456,7 @@ def create_education_tab(notebook, id):
 
 def on_item_double_click(event, person_id):
     
-    subprocess.Popen(["python", "mapsections2.py", str(record_id)])
+    subprocess.Popen([sys.executable, "mapsections2.py", str(record_id)])
   
 def map_it_action(tree):
     # Define the action for the "Map It" button
@@ -2115,7 +2128,7 @@ def create_spouse_dropdown_menu():
         spouse_dropdown_menu.add_command(label="View Spouse Record", command=open_spouse_record)
         spouse_dropdown_menu.add_command(label="Edit Marriage", command=lambda: edit_marriage_record())
         spouse_dropdown_menu.add_command(label="Delete Marriage Record", command=delete_marriage_record)
-    spouse_dropdown_menu.add_command(label="Add a Spouse", command=lambda: subprocess.Popen(["python", "marriagerecord_add.py", str(record_id)]))
+    spouse_dropdown_menu.add_command(label="Add a Spouse", command=lambda: subprocess.Popen([sys.executable, "marriagerecord_add.py", str(record_id)]))
     
     # Bind the right-click event
     label_spouse_dropdown.bind("<Button-1>", lambda e: spouse_dropdown_menu.post(e.x_root, e.y_root))
@@ -2125,7 +2138,7 @@ def edit_marriage_record():
     if selected_spouse_info:
         spouse_id = selected_spouse_info.split(':')[0].strip()
         if spouse_id.isdigit():
-            subprocess.Popen(["python", "marriagerecord_handle.py", str(record_id), spouse_id])
+            subprocess.Popen([sys.executable, "marriagerecord_handle.py", str(record_id), spouse_id])
         else:
             messagebox.showerror("Error", "Invalid spouse ID.")
     else:

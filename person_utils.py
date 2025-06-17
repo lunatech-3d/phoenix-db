@@ -1,3 +1,6 @@
+import sys
+import subprocess
+
 def launch_new_person_form(role=None, related_id=None):
     """
     Launch the editme.py script to add a new person.
@@ -6,7 +9,7 @@ def launch_new_person_form(role=None, related_id=None):
         role (str): Optional. 'child', 'father', or 'mother'
         related_id (int): Optional. The ID of the related person
     """
-    command = ["python", "editme.py"]
+    command = [sys.executable, "editme.py"]
     if role in ("child", "father", "mother") and related_id:
         command.extend([f"--new-{role}", str(related_id)])
     else:

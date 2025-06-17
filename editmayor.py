@@ -269,7 +269,7 @@ def edit_mayor_form():
 
     def open_main_rec():
         print(f"Mayor ID is: {main_rec_id}")
-        subprocess.Popen(["python", "editme.py", str(main_rec_id)])
+        subprocess.Popen([sys.executable, "editme.py", str(main_rec_id)])
         window.destroy()
     
     window_width = 600

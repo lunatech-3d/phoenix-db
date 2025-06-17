@@ -553,7 +553,7 @@ class EditBusinessForm:
             person_id = values[0]
             if person_id:
                 self.master.destroy()  # Optional: close current biz form if needed
-                subprocess.Popen(["python", "editme.py", str(person_id)])
+                subprocess.Popen([sys.executable, "editme.py", str(person_id)])
     
     def sort_owner_tree_by_column(self, col):
         if not hasattr(self, '_owner_sort_state'):

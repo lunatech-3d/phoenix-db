@@ -3,6 +3,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
+from datetime import datetime
+import subprocess
 from config import DB_PATH, PATHS
 from person_search import search_people
 
@@ -287,7 +289,58 @@ def open_person_linkage_popup(parent_id, role="child", refresh_callback=None):
         window.destroy()
 
     def add_new():
-        subprocess.Popen(["python", "editme.py", f"--new-{role}", str(parent_id)])
+        if role == 'child':
+            cursor.execute(
+                "SELECT first_name, middle_name, last_name FROM People WHERE id = ?",
+                (parent_id,)
+            )
+            parent_record = cursor.fetchone()
+            parent_name = " ".join(filter(None, parent_record)) if parent_record else "This person"
+
+            parent_role = prompt_parent_role(parent_name, "the new child")
+            if not parent_role:
+                return
+
+            father = parent_id if parent_role == 'father' else None
+            mother = parent_id if parent_role == 'mother' else None
+
+            cursor.execute(
+                "SELECT p.id, p.first_name, p.middle_name, p.last_name "
+                "FROM Marriages m JOIN People p ON (p.id = m.person1_id OR p.id = m.person2_id) "
+                "WHERE (m.person1_id = ? OR m.person2_id = ?) AND p.id != ?",
+                (parent_id, parent_id, parent_id),
+            )
+            spouse = cursor.fetchone()
+            spouse_name = " ".join(filter(None, spouse[1:])) if spouse else None
+            if spouse:
+                spouse_confirm = messagebox.askyesno(
+                    "Confirm Spouse",
+                    f"Do you want to assign {spouse_name} as the other parent?",
+                )
+                if spouse_confirm:
+                    if not father and parent_role == 'mother':
+                        father = spouse[0]
+                    elif not mother and parent_role == 'father':
+                        mother = spouse[0]
+
+            summary = (
+                f"Creating new child linked to:\n\n"
+                f"Father: {'(none)' if not father else 'ID ' + str(father)}\n"
+                f"Mother: {'(none)' if not mother else 'ID ' + str(mother)}\n\n"
+                f"Proceed?"
+            )
+
+            if not messagebox.askyesno("Confirm", summary):
+                return
+
+            cmd = ["python", "addme.py"]
+            if father:
+                cmd += ["--father", str(father)]
+            if mother:
+                cmd += ["--mother", str(mother)]
+            subprocess.Popen(cmd)
+        else:
+            subprocess.Popen(["python", "addme.py"])
         window.destroy()
 
     ttk.Button(button_frame, text=f"Link Selected {role.title()}", command=link_selected).pack(side="left", padx=5)

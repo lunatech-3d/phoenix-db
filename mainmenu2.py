@@ -22,10 +22,10 @@ def close_form():
 
 
 def launch_event_editor():
-    subprocess.Popen(["python", "events.py"])
+    subprocess.Popen([sys.executable, "events.py"])
 
 def open_address_management():
-    subprocess.run(["python", "address_management.py"])
+    subprocess.Popen([sys.executable, "address_management.py"])
 
 def export_data():
     # Connect to the database
@@ -242,7 +242,7 @@ def add_census_rec():
         person_info = tuple("" if value is None else value for value in person_info)
 
         # Run the addcensus.py script with the necessary arguments
-        subprocess.Popen(["python", "addcensus.py", str(record_id)] + list(person_info))
+        subprocess.Popen([sys.executable, "addcensus.py", str(record_id)] + list(person_info))
 
     else:
         messagebox.showinfo("No One Selected", "Please select someone from the table.")
@@ -276,7 +276,7 @@ def open_edit_form(event):
 
     # Check if record_id is not empty
     if record_id:
-        subprocess.Popen(["python", "editme.py", str(record_id)])
+        subprocess.Popen([sys.executable, "editme.py", str(record_id)])
     else:
         messagebox.showinfo("No Record Found", "The record you're trying to access does not exist.")
 
@@ -412,18 +412,18 @@ def delete_record():
 
 # Function to open the add form
 def open_add_form():
-    subprocess.Popen(["python", "addme.py"])
+    subprocess.Popen([sys.executable, "addme.py"])
 
 
 def open_business_management():
-    subprocess.Popen(["python", "business.py"])
-
+    subprocess.Popen([sys.executable, "business.py"])
+    
 # Function to open the census form for the selected record
 def open_census_window():
     selected_item = tree.focus()
     if selected_item:  # Check if a record is selected
         record_id = tree.item(selected_item)['values'][0]
-        subprocess.Popen(["python", "censusform.py", str(record_id)])
+        subprocess.Popen([sys.executable, "censusform.py", str(record_id)])
     else:
         messagebox.showinfo("No One Selected", "Please select a record in the table.")
 

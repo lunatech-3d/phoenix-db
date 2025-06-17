@@ -101,12 +101,12 @@ class EventBrowser:
         return self.tree.item(selected[0])["values"][0]
 
     def add_event(self):
-        subprocess.Popen(["python", "edit_event.py"])
+        subprocess.Popen([sys.executable, "edit_event.py"])
 
     def edit_event(self):
         event_id = self.get_selected_id()
         if event_id:
-            subprocess.Popen(["python", "edit_event.py", str(event_id)])
+            subprocess.Popen([sys.executable, "edit_event.py", str(event_id)])
 
     def delete_event(self):
         event_id = self.get_selected_id()
