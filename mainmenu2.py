@@ -174,7 +174,7 @@ def build_a_tree():
     selected_item = tree.focus()
     if selected_item:
         record_id = tree.item(selected_item)['values'][1]
-        subprocess.run(["python", "buildatree.py", str(record_id)])
+        subprocess.run([sys.executable, "buildatree.py", str(record_id)])
     else:
         messagebox.showinfo("No One Selected", "Please select a record in the table.")
 
@@ -183,45 +183,47 @@ def build_an_ancestor_tree():
     selected_item = tree.focus()
     if selected_item:
         record_id = tree.item(selected_item)['values'][1]
-        subprocess.run(["python", "buildancestortree.py", str(record_id)])
+        subprocess.run([sys.executable, "buildancestortree.py", str(record_id)])
     else:
         messagebox.showinfo("No One Selected", "Please select a record in the table.")
 
 
 def view_busineses():
     # Run the showbusinesses.py script with the necessary arguments
-        subprocess.run(["python", "showbusinesses.py"])
+        subprocess.run([sys.executable, "showbusinesses.py"])
 
 def view_residents():
     # Run the showresidents.py script with the necessary arguments
-        subprocess.run(["python", "showresidents.py"])
+        subprocess.run([sys.executable, "showresidents.py"])
 
 def view_sources():
      # Run the sources.py script with the necessary arguments
-        subprocess.run(["python", "sources.py"])
+        subprocess.run([sys.executable, "sources.py"])
+        
 
 def view_addresses():
     # Run the viewtheaddresses.py script with the necessary arguments
-        subprocess.run(["python", "viewtheaddresses.py"])
-
+        subprocess.run([sys.executable, "viewtheaddresses.py"])
+        
 def view_mayors():
     # Run the showmayors.py script with the necessary arguments
-        subprocess.run(["python", "showmayors.py"])
+        subprocess.run([sys.executable, "showmayors.py"])
+        
 
 def view_doc_types():
     # Run the doctypesupport.py script
-        subprocess.run(["python", "doctypesupport.py"])
+        subprocess.run([sys.executable, "doctypesupport.py"])
 def view_census_recs():
     # Run the showcensusrecs.py script
-        subprocess.run(["python", "showcensusrecs.py"])
+        subprocess.run([sys.executable, "showcensusrecs.py"])
 
 def view_orgs():
     # Run the orgs.py script
-        subprocess.run(["python", "orgs.py"])
+        subprocess.run([sys.executable, "orgs.py"])
 
 def view_members():
     # Run the members.py script
-        subprocess.run(["python", "members.py"])
+        subprocess.run([sys.executable, "members.py"])
 
 
 # Function to add a census record
@@ -249,7 +251,7 @@ def add_census_rec():
 
 # Function to open the FindAGrave Matching Interface
 def open_findagrave_matching():
-    subprocess.run(["python", "matchgraverecords.py"])
+    subprocess.run([sys.executable, "matchgraverecords.py"])
 
 def open_edit_form(event):
     selected_item = tree.focus()

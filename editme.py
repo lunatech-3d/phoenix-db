@@ -80,7 +80,21 @@ parser.add_argument("--new-mother", action="store_true", help="Add a new mother"
 parser.add_argument("--new-person", action="store_true", help="Add a new person")
 args = parser.parse_args()
 
-if args.new_child or args.new_father or args.new_mother or args.new_person:
+if args.new_child:
+    cmd = [sys.executable, "addme.py"]
+    if args.new_father and args.id:
+        cmd.extend(["--father", str(args.id)])
+    elif args.new_mother and args.id:
+        cmd.extend(["--mother", str(args.id)])
+    subprocess.Popen(cmd)
+    sys.exit(0)
+elif args.new_father and args.id:
+    subprocess.Popen([sys.executable, "addme.py", "--father", str(args.id)])
+    sys.exit(0)
+elif args.new_mother and args.id:
+    subprocess.Popen([sys.executable, "addme.py", "--mother", str(args.id)])
+    sys.exit(0)
+elif args.new_person:
     subprocess.Popen([sys.executable, "addme.py"])
     sys.exit(0)
 
@@ -500,7 +514,7 @@ def add_a_photo():
 
 
 def add_a_spouse():
-    subprocess.run(["python", "marriagerecord_add.py"])
+    subprocess.run([sys.executable, "marriagerecord_add.py"])
 
 # -------------------------------   
 # START OF THE ORGS TAB CODE
@@ -538,7 +552,7 @@ def create_orgs_tab(notebook, person_id):
 
     def launch_add_membership(person_id, refresh_callback):
         print(f"Launching members.py with person_id={person_id}")
-        subprocess.run(["python", "members.py", "--for-person", str(person_id)])
+        subprocess.run([sys.executable, "members.py", "--for-person", str(person_id)])
         print("Returned from subprocess — refreshing memberships")
         refresh_callback()
 
@@ -563,7 +577,7 @@ def create_orgs_tab(notebook, person_id):
             messagebox.showwarning("No Selection", "Please select a membership to edit.")
             return
         membership_id = table.focus()
-        subprocess.run(["python", "members.py", "--edit-membership", str(membership_id)])
+        subprocess.run([sys.executable, "members.py", "--edit-membership", str(membership_id)])
         refresh_callback()
 
     btn_edit = ttk.Button(button_frame, text="Edit Membership",
@@ -608,7 +622,7 @@ def create_orgs_tab(notebook, person_id):
     def on_item_double_click(event):
         selected_id = table.focus()  # Get the 'iid' of the selected item, which is the membership_id
         # Call the function to open the edit window, passing the membership_id
-        subprocess.run(["python", "members.py", "--edit-membership", str(selected_id)])
+        subprocess.run([sys.executable, "members.py", "--edit-membership", str(selected_id)])
         refresh_org_memberships()
 
     table.bind("<Double-1>", on_item_double_click)  # Bind double-click event
@@ -799,7 +813,7 @@ def create_business_tab(notebook, person_id):
             ))
 
     def launch_add_ownership():
-        subprocess.run(["python", "biz_ownership.py", "--for-person", str(person_id)])
+        subprocess.run([sys.executable, "biz_ownership.py", "--for-person", str(person_id)])
         refresh_ownerships()
 
     def launch_edit_ownership():
@@ -808,7 +822,7 @@ def create_business_tab(notebook, person_id):
             messagebox.showwarning("No Selection", "Please select an owner record to edit.")
             return
         ownership_id = owner_tree.item(selected[0])["values"][0]
-        subprocess.run(["python", "biz_ownership.py", "--edit-ownership", str(ownership_id)])
+        subprocess.run([sys.executable, "biz_ownership.py", "--edit-ownership", str(ownership_id)])
         refresh_ownerships()
 
     def launch_delete_ownership():
@@ -894,7 +908,7 @@ def create_business_tab(notebook, person_id):
             ))
 
     def launch_add_employment():
-        subprocess.run(["python", "biz_employees.py", "--for-person", str(person_id)])
+        subprocess.run([sys.executable, "biz_employees.py", "--for-person", str(person_id)])
         refresh_employments()
 
     def launch_edit_employment():
@@ -903,7 +917,7 @@ def create_business_tab(notebook, person_id):
             messagebox.showwarning("No Selection", "Please select an employment record to edit.")
             return
         emp_id = employee_tree.item(selected[0])["values"][0]
-        subprocess.run(["python", "biz_employees.py", "--edit-employment", str(emp_id)])
+        subprocess.run([sys.executable, "biz_employees.py", "--edit-employment", str(emp_id)])
         refresh_employments()
 
     def launch_delete_employment():

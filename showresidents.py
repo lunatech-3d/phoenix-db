@@ -45,7 +45,7 @@ def delete_resident():
     print("Edit me goes here")
 
 def add_resident():
-    subprocess.run(["python", "addresident.py"])
+    subprocess.run([sys.executable, "addresident.py"])
 
 def on_column_header_double_click(column):
     global current_sort_column

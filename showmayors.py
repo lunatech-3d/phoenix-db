@@ -97,7 +97,7 @@ def mayor_list_form():
 
     def add_mayor(window):
         window.destroy()  # Destroy the 'Show Mayors' window
-        subprocess.run(["python", "addmayor.py"])
+        subprocess.run([sys.executable, "addmayor.py"])
         mayor_list_form()  # Refresh the data
 
     def on_tree_select(event):

@@ -10,10 +10,26 @@ import subprocess
 from PIL import Image, ImageTk
 from context_menu import create_context_menu
 from config import DB_PATH
+import argparse
+
+parser = argparse.ArgumentParser(description="Add a new person record")
+parser.add_argument("--father", type=int, help="Pre-fill Father ID")
+parser.add_argument("--mother", type=int, help="Pre-fill Mother ID")
+args = parser.parse_args()
+prefill_father = args.father
+prefill_mother = args.mother
 
 # Connect to the database
 connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
+
+parser = argparse.ArgumentParser(description="Add a new person")
+parser.add_argument("--father", type=int, help="ID of the father")
+parser.add_argument("--mother", type=int, help="ID of the mother")
+args = parser.parse_args()
+
+prefill_father = args.father
+prefill_mother = args.mother
 
 def get_custom_list(list_name):
     cursor.execute("SELECT list_values FROM CustomLists WHERE list_name = ?", (list_name,))

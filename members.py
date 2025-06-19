@@ -325,7 +325,7 @@ def on_double_click(event):
             if response:
                 # Close current window and open the edit person script
                 root.destroy()  # Closes the main window, adjust as needed if multiple windows are open
-                subprocess.run(["python", "editme.py", str(person_id)])
+                subprocess.run([sys.executable, "editme.py", str(person_id)])
         else:
             # Handle other columns double-click for editing membership
             edit_membership_window(membership_id)

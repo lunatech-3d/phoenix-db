@@ -333,14 +333,14 @@ def open_person_linkage_popup(parent_id, role="child", refresh_callback=None):
             if not messagebox.askyesno("Confirm", summary):
                 return
 
-            cmd = ["python", "addme.py"]
+            cmd = [sys.executable, "addme.py"]
             if father:
                 cmd += ["--father", str(father)]
             if mother:
                 cmd += ["--mother", str(mother)]
             subprocess.Popen(cmd)
         else:
-            subprocess.Popen(["python", "addme.py"])
+            cmd = [sys.executable, "addme.py"]
         window.destroy()
 
     ttk.Button(button_frame, text=f"Link Selected {role.title()}", command=link_selected).pack(side="left", padx=5)
