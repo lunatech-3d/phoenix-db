@@ -192,7 +192,7 @@ def open_person_linkage_popup(parent_id, role="child", refresh_callback=None):
 
     refresh_tree(use_full_database=False)
 
-    def prompt_parent_role(parent_name, child_name):
+    def prompt_parent_role(parent_name, child_name, confirm_label="Link Child"):
         role_win = tk.Toplevel(window)
         role_win.title("Select Parent Role")
         role_var = tk.StringVar(value="father")
@@ -215,7 +215,7 @@ def open_person_linkage_popup(parent_id, role="child", refresh_callback=None):
             confirmed['value'] = False
             role_win.destroy()
 
-        ttk.Button(button_frame, text="Link Child", command=confirm).pack(side="left", padx=10)
+        ttk.Button(button_frame, text=confirm_label, command=confirm).pack(side="left", padx=10)
         ttk.Button(button_frame, text="Cancel", command=cancel).pack(side="right", padx=10)
 
         role_win.grab_set()
@@ -297,7 +297,7 @@ def open_person_linkage_popup(parent_id, role="child", refresh_callback=None):
             parent_record = cursor.fetchone()
             parent_name = " ".join(filter(None, parent_record)) if parent_record else "This person"
 
-            parent_role = prompt_parent_role(parent_name, "the new child")
+            parent_role = prompt_parent_role(parent_name, "the new child", confirm_label="Add Child")
             if not parent_role:
                 return
 
@@ -333,14 +333,17 @@ def open_person_linkage_popup(parent_id, role="child", refresh_callback=None):
             if not messagebox.askyesno("Confirm", summary):
                 return
 
-            cmd = [sys.executable, "addme.py"]
+            cmd = ["python", "addme.py"]
             if father:
                 cmd += ["--father", str(father)]
             if mother:
                 cmd += ["--mother", str(mother)]
-            subprocess.Popen(cmd)
+            subprocess.run(cmd)
+            if refresh_callback:
+                refresh_callback()
         else:
             cmd = [sys.executable, "addme.py"]
+            subprocess.run(cmd)
         window.destroy()
 
     ttk.Button(button_frame, text=f"Link Selected {role.title()}", command=link_selected).pack(side="left", padx=5)
