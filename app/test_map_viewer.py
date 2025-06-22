@@ -1,5 +1,7 @@
 import tkinter as tk
-from map_viewer import MapViewer
+
+#Local Imports
+from app.map_viewer import MapViewer
 
 class MapViewerApp:
     def __init__(self):

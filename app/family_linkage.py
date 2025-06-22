@@ -2,7 +2,10 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 from datetime import datetime
-from search_controls import SearchControls
+
+#Local Imports
+from app.config import DB_PATH, PATHS
+from app.search_controls import SearchControls
 
 temp_orders = {}  # Store member ordering changes: {member_id: new_order}
 original_orders = {}  # Store original orders for comparison

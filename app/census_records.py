@@ -1,8 +1,11 @@
 import tkinter as tk
 import sqlite3
 from tkinter import ttk, messagebox
-from common_utils import load_townships
-from resgroup_utils import get_or_create_resgroup, add_resgroup_member, update_resgroup_address, cleanup_resgroup, show_entire_group
+
+#Local Imports
+from app.config import DB_PATH, PATHS
+from app.common_utils import load_townships
+from app.resgroup_utils import get_or_create_resgroup, add_resgroup_member, update_resgroup_address, cleanup_resgroup, show_entire_group
 
 current_address_mapping = {}
 

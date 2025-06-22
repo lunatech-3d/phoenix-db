@@ -1,6 +1,8 @@
 import sqlite3
 import json
-from property_boundary import PropertyBoundaryCalculator
+
+#Local Import
+from app.property_boundary import PropertyBoundaryCalculator
 
 class GeoDataManager:
     """Manager class for handling all geographic data operations"""

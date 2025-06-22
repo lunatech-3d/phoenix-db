@@ -2,8 +2,10 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 from datetime import datetime
-from context_menu import create_context_menu
-from person_search import search_people
+
+#Local Imports
+from app.context_menu import create_context_menu
+from app.person_search import search_people
 import re
 
 class AddDeedDialog:

@@ -4,6 +4,7 @@ from tkinter import ttk, messagebox
 
 #Local Imports
 from app.family_linkage import open_family_linkage_window
+from app.census_records import edit_census_record
 
 # Debug mode for logging
 DEBUG_MODE = True
@@ -198,8 +199,6 @@ def show_entire_group(cursor, census_tree):
                 # Refresh the parent tree with updated data
                 load_group_tree(cursor, tree, res_group_id, census_year, dwelling_num)
 
-            from census_records import edit_census_record  # Local import
-            print(f"Made it to the call to edit the record. person id is: {person_id}",flush=True)
             edit_census_record(
                 cursor=cursor,
                 census_tree=tree,
