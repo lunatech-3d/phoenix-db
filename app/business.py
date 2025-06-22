@@ -1,7 +1,7 @@
 # business.py
 import tkinter as tk
 import sys
-from config import DB_PATH
+from .config import DB_PATH, PATHS
 from tkinter import ttk, messagebox
 from date_utils import format_date_for_display
 import sqlite3

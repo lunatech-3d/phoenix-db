@@ -1,1 +1,1 @@
-from app.config import
+from app.config import DB_PATH, PATHS

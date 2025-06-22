@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import sys
-from config import DB_PATH
+from .config import DB_PATH, PATHS
 import sqlite3
 
 # Connect to the database

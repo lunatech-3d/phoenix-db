@@ -3,7 +3,7 @@ from tkinter import ttk, font
 from PIL import Image, ImageTk
 import sqlite3
 import sys
-from config import DB_PATH
+from .config import PATHS, DB_PATH
 import webbrowser
 import subprocess
 from tkinter import filedialog
@@ -269,7 +269,7 @@ def edit_mayor_form():
 
     def open_main_rec():
         print(f"Mayor ID is: {main_rec_id}")
-        subprocess.Popen([sys.executable, "editme.py", str(main_rec_id)])
+        subprocess.Popen([sys.executable, PATHS.editme, str(main_rec_id)])
         window.destroy()
     
     window_width = 600

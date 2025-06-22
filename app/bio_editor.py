@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
-from config import DB_PATH
+from .config import DB_PATH, PATHS
 import os
 from context_menu import create_context_menu
 

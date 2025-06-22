@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
-from config import DB_PATH
+from .config import PATHS, DB_PATH
 from edit_deed_dialog import EditDeedDialog
 from add_deed_dialog import AddDeedDialog
 from geodata import (

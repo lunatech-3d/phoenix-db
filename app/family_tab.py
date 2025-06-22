@@ -1,5 +1,5 @@
 import sys
-from config import DB_PATH
+from .config import PATHS, DB_PATH
 
 def create_family_tab(notebook, person_id):
 

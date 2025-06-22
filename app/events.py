@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
-from config import DB_PATH
+from .config import PATHS, DB_PATH
 import subprocess
 from date_utils import format_date_for_display
 
@@ -101,12 +101,12 @@ class EventBrowser:
         return self.tree.item(selected[0])["values"][0]
 
     def add_event(self):
-        subprocess.Popen([sys.executable, "edit_event.py"])
+        subprocess.Popen([sys.executable, PATHS.edit_event])
 
     def edit_event(self):
         event_id = self.get_selected_id()
         if event_id:
-            subprocess.Popen([sys.executable, "edit_event.py", str(event_id)])
+            subprocess.Popen([sys.executable, PATHS.edit_event", str(event_id)])
 
     def delete_event(self):
         event_id = self.get_selected_id()

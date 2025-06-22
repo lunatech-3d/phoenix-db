@@ -6,8 +6,8 @@ import sqlite3
 import webbrowser
 import urllib.parse
 import sys 
-from config import DB_PATH
-from datetime import datetime
+from .config import PATHS, DB_PATH
+from app.datetime import datetime
 from date_utils import parse_date_input, format_date_for_display, date_sort_key
 from context_menu import create_context_menu, apply_context_menu_to_all_entries
 from person_linkage import person_search_popup
@@ -553,7 +553,7 @@ class EditBusinessForm:
             person_id = values[0]
             if person_id:
                 self.master.destroy()  # Optional: close current biz form if needed
-                subprocess.Popen([sys.executable, "editme.py", str(person_id)])
+                subprocess.Popen([sys.executable, PATHS.editme, str(person_id)])
     
     def sort_owner_tree_by_column(self, col):
         if not hasattr(self, '_owner_sort_state'):
@@ -983,7 +983,7 @@ class EditBusinessForm:
             values = self.employee_tree.item(selected[0])['values']
             person_id = values[0]
             if person_id:
-                subprocess.Popen([sys.executable, "editme.py", str(person_id)])
+                subprocess.Popen([sys.executable, PATHS.editme, str(person_id)])
 
             
     def sort_employee_tree_by_column(self, col):
@@ -1306,7 +1306,7 @@ class EditBusinessForm:
             result = self.cursor.fetchone()
             if result:
                 person_id = result[0]
-                subprocess.Popen([sys.executable, "editme.py", str(person_id)])
+                subprocess.Popen([sys.executable, PATHS.editme, str(person_id)])
             else:
                 messagebox.showinfo("Info", f"No linked person found for '{person_name}'.")
 

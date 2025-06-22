@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
-from config import DB_PATH, PATHS
+from .config import DB_PATH, PATHS
 from context_menu import create_context_menu
 from person_search import search_people as lookup_people
 

@@ -3,7 +3,7 @@ from tkinter import ttk
 import sqlite3
 import subprocess
 import sys
-from config import DB_PATH, PATHS
+from .config import DB_PATH, PATHS
 
 # Connect to the database
 connection = sqlite3.connect(DB_PATH)
@@ -45,7 +45,7 @@ def delete_resident():
     print("Edit me goes here")
 
 def add_resident():
-    subprocess.run([sys.executable, "addresident.py"])
+    subprocess.run([sys.executable, PATHS.addresident])
 
 def on_column_header_double_click(column):
     global current_sort_column

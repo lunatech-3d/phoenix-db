@@ -5,7 +5,7 @@ import os
 import sys
 from config import DB_PATH, PATHS
 import webbrowser
-from context_menu import create_context_menu
+from .config import DB_PATH, PATHS
 from date_utils import parse_date_input, format_date_for_display
 
 def open_link(link):

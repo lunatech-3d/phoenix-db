@@ -3,7 +3,7 @@ from tkinter import ttk
 from tkinter import messagebox
 from datetime import datetime
 import sys
-from config import DB_PATH  
+from .config import DB_PATH, PATHS  
 import sqlite3
 
 

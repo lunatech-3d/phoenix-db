@@ -9,7 +9,7 @@ from datetime import datetime
 import subprocess
 from PIL import Image, ImageTk
 from context_menu import create_context_menu
-from config import DB_PATH
+from .config import DB_PATH, PATHS
 import argparse
 
 parser = argparse.ArgumentParser(description="Add a new person record")

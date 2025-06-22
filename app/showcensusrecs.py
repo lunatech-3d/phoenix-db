@@ -2,7 +2,7 @@ import sqlite3
 import sys
 import subprocess
 import tkinter as tk
-from config import DB_PATH, PATHS
+from .config import DB_PATH, PATHS
 from tkinter import messagebox
 from tkinter import ttk
 

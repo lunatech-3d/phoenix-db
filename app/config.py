@@ -3,10 +3,12 @@ import os
 from pathlib import Path
 
 # Root directory of the project (phoenix-db/)
-BASE_DIR = Path(__file__).resolve().parent
+REPO_DIR = Path(__file__).resolve().parent.parent
+# Directory containing application scripts
+APP_DIR = REPO_DIR / "app"
 
 # Path to the SQLite database file
-DB_PATH = str(BASE_DIR / "phoenix.db")  # ✅ Must be a string for sqlite3.connect
+DB_PATH = str(REPO_DIR / "phoenix.db")  # ✅ Must be a string for sqlite3.connect
 
 # Centralized access to helper scripts
 class PATHS:
@@ -38,3 +40,11 @@ class PATHS:
     showmayors = str(APP_DIR / "showmayors.py")
     showresidents = str(APP_DIR / "showresidents.py")
     viewtheaddresses = str(APP_DIR / "viewtheaddresses.py")
+    addresident = str(APP_DIR / "addresident.py")
+    addmayor = str(APP_DIR / "addmayor.py")
+    edit_event = str(APP_DIR / "edit_event.py")
+    marriagerecord_add = str(APP_DIR / "marriagerecord_add.py")
+    marriagerecord_handle = str(APP_DIR / "marriagerecord_handle.py")
+    biz_ownership = str(APP_DIR / "biz_ownership.py")
+    biz_employees = str(APP_DIR / "biz_employees.py")
+    mapsections2 = str(APP_DIR / "mapsections2.py")

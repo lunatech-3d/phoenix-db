@@ -3,7 +3,7 @@ import sys
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
-from config import DB_PATH
+from .config import DB_PATH, PATHS
 
 # Retrieve the arguments
 person_id = int(sys.argv[1])

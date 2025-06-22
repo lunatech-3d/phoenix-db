@@ -9,7 +9,7 @@ def launch_new_person_form(role=None, related_id=None):
         role (str): Optional. 'child', 'father', or 'mother'
         related_id (int): Optional. The ID of the related person
     """
-    command = [sys.executable, "editme.py"]
+    command = [sys.executable, PATHS.editme]
     if role in ("child", "father", "mother") and related_id:
         command.extend([f"--new-{role}", str(related_id)])
     else:

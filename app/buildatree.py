@@ -3,8 +3,7 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
 import sys
-from config import DB_PATH
-
+from .config import DB_PATH, PATHS
 
 # Connect to the database
 connection = sqlite3.connect(DB_PATH)

@@ -389,7 +389,7 @@ def open_person_linkage_popup(parent_id, role="child", refresh_callback=None):
             if not messagebox.askyesno("Confirm", summary):
                 return
 
-            cmd = ["python", "addme.py"]
+            cmd = ["python", PATHS.addme]
             if father:
                 cmd += ["--father", str(father)]
             if mother:
@@ -398,7 +398,7 @@ def open_person_linkage_popup(parent_id, role="child", refresh_callback=None):
             if refresh_callback:
                 refresh_callback()
         else:
-            cmd = [sys.executable, "addme.py"]
+            cmd = [sys.executable, PATHS.addme]
             subprocess.run(cmd)
         window.destroy()
 

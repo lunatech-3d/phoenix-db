@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
-from config import DB_PATH
+from .config import PATHS, DB_PATH
 from datetime import datetime
 import re
 from add_deed_dialog import AddDeedDialog  # Import the base class

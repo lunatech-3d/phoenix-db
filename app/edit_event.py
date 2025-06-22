@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
-from config import DB_PATH
+from .config import PATHS, DB_PATH
 from date_utils import parse_date_input, format_date_for_display
 
 class EditEventForm:

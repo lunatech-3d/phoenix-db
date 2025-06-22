@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
-from config import DB_PATH
+from .config import PATHS, DB_PATH
 import webbrowser
 from datetime import datetime
 from context_menu import create_context_menu

@@ -1,7 +1,7 @@
 
 import tkinter as tk
 import sys
-from config import DB_PATH
+from .config import DB_PATH, PATHS
 from tkinter import ttk
 import sqlite3
 

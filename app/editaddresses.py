@@ -1,7 +1,7 @@
 import sqlite3
 import tkinter as tk
 import sys
-from config import DB_PATH
+from .config import PATHS, DB_PATH
 from tkinter import ttk, messagebox
 from tkinter import filedialog
 

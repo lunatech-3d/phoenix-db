@@ -3,7 +3,7 @@
 import tkinter as tk
 from tkinter import ttk
 import sys
-from config import PATHS, DB_PATH
+from .config import PATHS, DB_PATH
 import subprocess
 
 def paste_from_clipboard(entry):

@@ -1,7 +1,7 @@
 import sqlite3
 import json
 import sys
-from config import DB_PATH
+from .config import PATHS, DB_PATH
 from pathlib import Path
 import webbrowser
 

@@ -3,7 +3,7 @@ from tkinter import ttk, messagebox
 import sqlite3
 import sys
 from config import DB_PATH
-from context_menu import create_context_menu
+from .config import DB_PATH, PATHS
 from person_search import search_people as lookup_people
 
 # Connect to the database
