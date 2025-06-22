@@ -7,6 +7,7 @@ import webbrowser
 #Local Imports
 from app.config import DB_PATH, PATHS
 from app.date_utils import format_date_for_display
+from app.editbiz import open_edit_business_form
 
 class BusinessManager:
     def __init__(self, root):
@@ -160,8 +161,7 @@ class BusinessManager:
 
 
     def add_business(self):
-        import editbiz
-        editbiz.open_edit_business_form()
+        open_edit_business_form()
 
     
     def edit_business(self, event=None):
@@ -169,8 +169,7 @@ class BusinessManager:
         if not selected:
             return
         biz_id = self.tree.item(selected[0])['values'][0]
-        import app.editbiz
-        editbiz.open_edit_business_form(biz_id)
+        open_edit_business_form(biz_id)
 
     
     def delete_business(self):

@@ -5,6 +5,7 @@ import subprocess
 
 #Local Imports
 from app.config import PATHS, DB_PATH
+from app.context_menu import create_context_menu
 
 def paste_from_clipboard(entry):
     try:
@@ -74,9 +75,8 @@ def create_context_menu(entry, entries=None):
 
 
 def apply_context_menu_to_all_entries(container):
-    from context_menu import create_context_menu
     for widget in container.winfo_children():
-        if isinstance(widget, ttk.Entry) or isinstance(widget, tk.Text):
+        if isinstance(widget, (ttk.Entry, tk.Text)):
             create_context_menu(widget)
         elif widget.winfo_children():
             apply_context_menu_to_all_entries(widget)

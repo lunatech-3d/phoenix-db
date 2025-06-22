@@ -1,7 +1,7 @@
 import sqlite3
 import json
 
-From app.config import DB_PATH, PATHS
+from app.config import DB_PATH, PATHS
 from app.property_boundary import PropertyBoundaryCalculator
 
 class GeoDataManager:
