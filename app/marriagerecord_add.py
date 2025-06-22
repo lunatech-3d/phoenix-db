@@ -2,14 +2,15 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
-from .config import DB_PATH, PATHS
-from context_menu import create_context_menu
-from person_search import search_people as lookup_people
+
+#Local Imports
+from app.config import DB_PATH, PATHS
+from app.context_menu import create_context_menu
+from app.person_search import search_people as lookup_people
 
 # Connect to the database
 connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
-
 
 def get_custom_list(list_name):
     cursor.execute("SELECT list_values FROM CustomLists WHERE list_name = ?", (list_name,))

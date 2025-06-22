@@ -1,7 +1,9 @@
 import tkinter as tk
 import sqlite3
 from tkinter import ttk, messagebox
-from family_linkage import open_family_linkage_window
+
+#Local Imports
+from app.family_linkage import open_family_linkage_window
 
 # Debug mode for logging
 DEBUG_MODE = True
@@ -160,8 +162,6 @@ def show_entire_group(cursor, census_tree):
             tree.insert("", "end", values=(person_id, name, age, occupation, relation))
 
         tree.pack(fill="both", expand=True, padx=10, pady=10)
-
-
 
         # Define the double-click handler
         def on_double_click(event):

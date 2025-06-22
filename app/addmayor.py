@@ -4,9 +4,11 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
-from showmayors import mayor_list_form 
-from date_utils import parse_date_input, format_date_for_display, add_date_format_menu
-from .config import DB_PATH, PATHS
+
+#Local Imports
+from app.config import DB_PATH, PATHS
+from app.showmayors import mayor_list_form 
+from app.date_utils import parse_date_input, format_date_for_display, add_date_format_menu
 
 connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()

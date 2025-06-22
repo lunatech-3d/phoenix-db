@@ -24,7 +24,7 @@ def update_sources_dropdown():
 
 def manage_sources():
     """Launch the external sources.py script."""
-    subprocess.run([sys.executable, str(PATHS.sources)])
+    subprocess.run([sys.executable, str("app".sources)])
 
 
 def add_citation():

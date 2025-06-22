@@ -179,7 +179,7 @@ def build_a_tree():
     selected_item = tree.focus()
     if selected_item:
         record_id = tree.item(selected_item)['values'][1]
-        subprocess.run([sys.executable, "-m" "app.buildatree", str(record_id)])
+        subprocess.run([sys.executable, "-m", "app.buildatree", str(record_id)])
     else:
         messagebox.showinfo("No One Selected", "Please select a record in the table.")
 
@@ -249,7 +249,7 @@ def add_census_rec():
         person_info = tuple("" if value is None else value for value in person_info)
 
         # Run the addcensus.py script with the necessary arguments
-        subprocess.Popen([sys.executable, PATHS.addcensus, str(record_id)] + list(person_info))
+        subprocess.Popen([sys.executable, "-m", "app.addcensus", str(record_id)] + list(person_info))
 
     else:
         messagebox.showinfo("No One Selected", "Please select someone from the table.")
@@ -283,7 +283,7 @@ def open_edit_form(event):
 
     # Check if record_id is not empty
     if record_id:
-        subprocess.Popen([sys.executable, os.path.join("app", "-m", "app.editme"), str(record_id)])
+        subprocess.Popen([sys.executable, "-m", "app.editme", str(record_id)])
 
     else:
         messagebox.showinfo("No Record Found", "The record you're trying to access does not exist.")

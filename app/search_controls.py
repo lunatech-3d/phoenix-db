@@ -1,6 +1,9 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from person_search import search_people
+
+#Local Import
+from app.config import DB_PATH, PATHS
+from app.person_search import search_people
 
 class SearchControls:
     def __init__(self, parent_frame, tree_to_populate, cursor,

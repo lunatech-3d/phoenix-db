@@ -985,7 +985,7 @@ class EditBusinessForm:
             values = self.employee_tree.item(selected[0])['values']
             person_id = values[0]
             if person_id:
-                subprocess.Popen([sys.executable, " -m" "app.editme", str(person_id)])
+                subprocess.Popen([sys.executable, "-m", "app.editme", str(person_id)])
 
             
     def sort_employee_tree_by_column(self, col):

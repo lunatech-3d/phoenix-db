@@ -114,7 +114,7 @@ def mayor_list_form():
         global selected_mayor_id
         
         if selected_mayor_id:
-            subprocess.Popen(["python", "-m", "app.editmayor", str(selected_mayor_id)])  # convert selected_mayor_id to string
+            subprocess.Popen([sys.executable, "-m", "app.editmayor", str(selected_mayor_id)])  # convert selected_mayor_id to string
 
 
     # Start the layout of the GUI Interface

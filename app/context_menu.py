@@ -17,7 +17,7 @@ def add_a_source(id, first_name, middle_name, last_name, married_name):
     full_name = f"{first_name} {' ' + middle_name if middle_name else ''} {last_name}"
     if married_name:
         full_name += f" (née {married_name})"
-    command = [sys.executable, str(PATHS.citations), str(id), full_name]
+    command = [sys.executable, "-m", "app.citations", str(id), full_name]
     subprocess.run(command)  
 
 
