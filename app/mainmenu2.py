@@ -32,7 +32,7 @@ def launch_event_editor():
     subprocess.Popen([sys.executable, PATHS.events])
 
 def open_address_management():
-    subprocess.Popen([sys.executable, PATHS.address_management])
+    subprocess.Popen([sys.executable, "-m", "app.address_management"])
 
 def export_data():
     # Connect to the database
@@ -214,7 +214,7 @@ def view_addresses():
         
 def view_mayors():
     # Run the showmayors.py script with the necessary arguments
-        subprocess.run([sys.executable, PATHS.showmayors])
+        subprocess.Popen([sys.executable, "-m", "app.showmayors"])
         
 
 def view_doc_types():

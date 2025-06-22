@@ -1,12 +1,13 @@
 import tkinter as tk
 from tkinter import ttk
 import sqlite3
-from datetime import datetime
 from tkinter import messagebox
 import sys
-from .config import DB_PATH, PATHS
 import subprocess
-from date_utils import format_date_for_display, parse_date_input
+from datetime import datetime
+
+from app.config import DB_PATH, PATHS
+from app.date_utils import format_date_for_display, parse_date_input
 
 
 def mayor_list_form():
@@ -97,7 +98,7 @@ def mayor_list_form():
 
     def add_mayor(window):
         window.destroy()  # Destroy the 'Show Mayors' window
-        subprocess.run([sys.executable, PATHS.addmayor])
+        subprocess.Popen([sys.executable, "-m", "app.addmayor"])
         mayor_list_form()  # Refresh the data
 
     def on_tree_select(event):
@@ -112,7 +113,7 @@ def mayor_list_form():
         global selected_mayor_id
         
         if selected_mayor_id:
-            subprocess.run(["python", "editmayor.py", str(selected_mayor_id)])  # convert selected_mayor_id to string
+            subprocess.Popen(["python", "-m", "app.editmayor", str(selected_mayor_id)])  # convert selected_mayor_id to string
 
 
     # Start the layout of the GUI Interface

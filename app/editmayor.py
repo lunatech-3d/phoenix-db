@@ -3,13 +3,13 @@ from tkinter import ttk, font
 from PIL import Image, ImageTk
 import sqlite3
 import sys
-from .config import PATHS, DB_PATH
 import webbrowser
 import subprocess
 from tkinter import filedialog
 from datetime import datetime
-from date_utils import parse_date_input, format_date_for_display, add_date_format_menu
 
+from app.config import PATHS, DB_PATH
+from app.date_utils import parse_date_input, format_date_for_display, add_date_format_menu
 
 def edit_mayor_form():
     

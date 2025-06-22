@@ -6,13 +6,14 @@ import sqlite3
 import webbrowser
 import urllib.parse
 import sys 
-from .config import PATHS, DB_PATH
+
+from app.config import PATHS, DB_PATH
 from app.datetime import datetime
-from date_utils import parse_date_input, format_date_for_display, date_sort_key
-from context_menu import create_context_menu, apply_context_menu_to_all_entries
-from person_linkage import person_search_popup
-from biz_employees import open_employee_editor
-from biz_linkage import open_biz_linkage_popup
+from app.date_utils import parse_date_input, format_date_for_display, date_sort_key
+from app.context_menu import create_context_menu, apply_context_menu_to_all_entries
+from app.person_linkage import person_search_popup
+from app.biz_employees import open_employee_editor
+from app.biz_linkage import open_biz_linkage_popup
 
 connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
@@ -553,7 +554,7 @@ class EditBusinessForm:
             person_id = values[0]
             if person_id:
                 self.master.destroy()  # Optional: close current biz form if needed
-                subprocess.Popen([sys.executable, PATHS.editme, str(person_id)])
+                subprocess.Popen([sys.executable, "-m", "app.editme", str(person_id)])
     
     def sort_owner_tree_by_column(self, col):
         if not hasattr(self, '_owner_sort_state'):
@@ -983,7 +984,7 @@ class EditBusinessForm:
             values = self.employee_tree.item(selected[0])['values']
             person_id = values[0]
             if person_id:
-                subprocess.Popen([sys.executable, PATHS.editme, str(person_id)])
+                subprocess.Popen([sys.executable, " -m" "app.editme", str(person_id)])
 
             
     def sort_employee_tree_by_column(self, col):

@@ -1,1 +1,0 @@
-from app.config import DB_PATH, PATHS
