@@ -38,3 +38,27 @@ This documentation is automatically updated as part of the development process.
 ## Configuration
 
 Path handling is centralized in `config.py`. The module defines `DB_PATH` and helper script locations relative to the repository root so code no longer hard-codes file paths. Update these constants if you move the database or scripts.
+
+## 🏛️ Institutions Subsystem
+
+The Phoenix Database now includes structured support for institutions such as schools, churches, hospitals, and civic facilities. These are tracked with:
+
+- [`Institution`](docs/schema.md#🧩-table-institution): Base table for each institution
+- `Inst_Location`: Tracks where the institution operated
+- `Inst_Affiliation`: Links individuals to the institution with roles and dates
+- `Inst_Lineage`: Documents renames, merges, and other lineage changes
+- `InstRole`: Lookup table for role standardization
+
+These tables are fully documented in the schema file:
+🔗 [`docs/schema.md`](docs/schema.md)
+
+### 🤖 Codex Integration
+
+Codex can assist with this subsystem using:
+
+- SQL files in [`sql/`](sql/)
+  - `phase1_institution.sql` – Core identity and location
+  - `phase2_institution.sql` – Affiliations and role tracking
+- Guidance in [`sql/README.md`](sql/README.md)
+
+All SQL scripts follow the `Inst_*` naming convention and standard Phoenix date handling (`*_start_date`, `*_end_date`, with `*_date_precision` when needed)

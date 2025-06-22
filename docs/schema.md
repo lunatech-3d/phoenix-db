@@ -895,3 +895,74 @@ records via the parent_township_id field.
 | `notes` | TEXT | No | No |  |
 | `county` | TEXT | No | No |  |
 | `state` | TEXT | No | No |  |
+
+
+## 🧩 Table: `Institution`
+> Core registry of institutions such as schools, hospitals, and churches.
+
+| Column Name         | Data Type | Not Null | Primary Key | Default Value |
+|---------------------|-----------|----------|-------------|----------------|
+| `inst_id`           | INTEGER   | No       | Yes         |                |
+| `inst_name`         | TEXT      | No       | No          |                |
+| `inst_type`         | TEXT      | No       | No          |                |
+| `inst_founding_date`| TEXT      | No       | No          |                |
+| `inst_closing_date` | TEXT      | No       | No          |                |
+| `inst_description`  | TEXT      | No       | No          |                |
+| `inst_website`      | TEXT      | No       | No          |                |
+| `inst_image_path`   | TEXT      | No       | No          |                |
+| `inst_external_url` | TEXT      | No       | No          |                |
+| `inst_notes`        | TEXT      | No       | No          |                |
+
+---
+
+## 🧩 Table: `Inst_Lineage`
+> Tracks renaming, merging, or splitting history of institutions.
+
+| Column Name     | Data Type | Not Null | Primary Key | Default Value |
+|-----------------|-----------|----------|-------------|----------------|
+| `lineage_id`    | INTEGER   | No       | Yes         |                |
+| `inst_id`       | INTEGER   | No       | No          |                |
+| `related_inst_id` | INTEGER | No       | No          |                |
+| `lineage_type`  | TEXT      | No       | No          |                |
+| `lineage_notes` | TEXT      | No       | No          |                |
+
+---
+
+## 🧩 Table: `Inst_Location`
+> Records the physical address history of an institution.
+
+| Column Name         | Data Type | Not Null | Primary Key | Default Value |
+|---------------------|-----------|----------|-------------|----------------|
+| `inst_location_id`  | INTEGER   | No       | Yes         |                |
+| `inst_id`           | INTEGER   | No       | No          |                |
+| `address_id`        | INTEGER   | No       | No          |                |
+| `location_start_date` | TEXT    | No       | No          |                |
+| `location_end_date` | TEXT     | No       | No          |                |
+| `location_notes`    | TEXT     | No       | No          |                |
+
+---
+
+## 🧩 Table: `Inst_Affiliation`
+> Links individuals to institutions by role (e.g., teacher, student, janitor).
+
+| Column Name               | Data Type | Not Null | Primary Key | Default Value |
+|---------------------------|-----------|----------|-------------|----------------|
+| `inst_affiliation_id`     | INTEGER   | No       | Yes         |                |
+| `inst_id`                 | INTEGER   | No       | No          |                |
+| `person_id`               | INTEGER   | No       | No          |                |
+| `inst_affiliation_role`   | TEXT      | No       | No          |                |
+| `inst_affiliation_start_date` | TEXT  | No       | No          |                |
+| `inst_affiliation_end_date` | TEXT    | No       | No          |                |
+| `inst_affiliation_notes` | TEXT      | No       | No          |                |
+| `source_id`               | INTEGER   | No       | No          |                |
+
+---
+
+## 🧩 Table: `InstRole`
+> Lookup table for standardized roles within institutions.
+
+| Column Name     | Data Type | Not Null | Primary Key | Default Value |
+|-----------------|-----------|----------|-------------|----------------|
+| `inst_role`     | TEXT      | Yes      | Yes         |                |
+| `role_category` | TEXT      | No       | No          |                |
+| `role_description` | TEXT   | No       | No          |                |
