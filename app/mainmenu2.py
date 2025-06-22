@@ -1,16 +1,21 @@
 import sqlite3
 import sys
 import csv
+import os
 import subprocess
 import tkinter as tk
-from config import DB_PATH
 from tkinter import messagebox
 from tkinter import ttk
 from tkinter import filedialog
 from PIL import ImageTk, Image
 
-#Local imports
-from app.person_search import search_people
+
+#Local Imports
+from .config import DB_PATH
+from .person_search import search_people
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 # Connect to the database
 connection = sqlite3.connect(DB_PATH)
@@ -21,6 +26,7 @@ def close_form():
     if messagebox.askquestion("Close Form", "Are you sure you want to close the form?") == "yes":
         window.destroy()
         load_records()
+
 
 def launch_event_editor():
     subprocess.Popen([sys.executable, "events.py"])
@@ -279,7 +285,8 @@ def open_edit_form(event):
 
     # Check if record_id is not empty
     if record_id:
-        subprocess.Popen([sys.executable, "editme.py", str(record_id)])
+        subprocess.Popen([sys.executable, os.path.join("app", "editme.py"), str(record_id)])
+
     else:
         messagebox.showinfo("No Record Found", "The record you're trying to access does not exist.")
 
