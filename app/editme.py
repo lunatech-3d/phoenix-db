@@ -31,6 +31,8 @@ from app.life_events_editor import create_embedded_life_events
 from app.config import DB_PATH, PATHS
 from app.editbiz import EditBusinessForm
 
+from app.family_linkage import open_family_linkage_window  # Importing family linkage module
+
 from app.findagrave_agent_direct import (
     findagrave_direct_search,
     show_findagrave_picker,
@@ -98,7 +100,6 @@ elif args.new_person:
     subprocess.Popen([sys.executable, "-m", "app.addme"])
     sys.exit(0)
 
-#from map_control import load_sections, load_boundary, load_placemarks
 
 # Connect to the database
 connection = sqlite3.connect(DB_PATH)
@@ -753,9 +754,6 @@ def format_legal_description(section, quarter, quarter_quarter, half, acres, des
 # ---------------------------------------- 
 
 def create_business_tab(notebook, person_id):
-    import sqlite3
-    import subprocess
-    from tkinter import messagebox
 
     connection = sqlite3.connect("phoenix.db")
     cursor = connection.cursor()
@@ -815,7 +813,6 @@ def create_business_tab(notebook, person_id):
                 start_date, start_prec, end_date, end_prec, notes
             ) = row
 
-            from date_utils import format_date_for_display
             start_fmt = format_date_for_display(start_date, start_prec)
             end_fmt = format_date_for_display(end_date, end_prec)
 
@@ -910,7 +907,6 @@ def create_business_tab(notebook, person_id):
                 start_date, start_prec, end_date, end_prec, notes, url
             ) = row
 
-            from date_utils import format_date_for_display
             start_fmt = format_date_for_display(start_date, start_prec)
             end_fmt = format_date_for_display(end_date, end_prec)
 
@@ -1496,8 +1492,6 @@ def map_it_action(tree):
 # -------------------------------   
 # START OF THE RESIDENCE TAB CODE
 # -------------------------------
-
-from family_linkage import open_family_linkage_window  # Importing family linkage module
 
 # Define the function to fetch all existing addresses from the Address table
 def get_all_addresses():

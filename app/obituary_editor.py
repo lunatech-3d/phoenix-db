@@ -7,6 +7,7 @@ import sys
 #Local Imports
 from app.config import DB_PATH, PATHS
 from app.date_utils import parse_date_input, format_date_for_display
+from app.context_menu import create_context_menu
 
 def open_link(link):
     if link:

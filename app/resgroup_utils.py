@@ -4,7 +4,6 @@ from tkinter import ttk, messagebox
 
 #Local Imports
 from app.family_linkage import open_family_linkage_window
-from app.census_records import edit_census_record
 
 # Debug mode for logging
 DEBUG_MODE = True

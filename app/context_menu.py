@@ -3,10 +3,6 @@ from tkinter import ttk
 import sys
 import subprocess
 
-#Local Imports
-from app.config import PATHS, DB_PATH
-from app.context_menu import create_context_menu
-
 def paste_from_clipboard(entry):
     try:
         clipboard_text = entry.clipboard_get()

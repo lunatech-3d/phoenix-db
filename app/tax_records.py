@@ -1,8 +1,10 @@
 import tkinter as tk
 import sqlite3
 from tkinter import ttk, messagebox, simpledialog
-from common_utils import load_townships
-from hotkeys import bind_field_hotkeys, HOTKEY_MAP
+
+#Local Imports
+from app.common_utils import load_townships
+from app.hotkeys import bind_field_hotkeys, HOTKEY_MAP
 
 #  TAX RECORD FUNCTIONS
 #
