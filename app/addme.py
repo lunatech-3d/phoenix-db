@@ -8,9 +8,11 @@ import re
 from datetime import datetime
 import subprocess
 from PIL import Image, ImageTk
-from context_menu import create_context_menu
-from .config import DB_PATH, PATHS
 import argparse
+
+#Local Imports
+from app.context_menu import create_context_menu
+from app.config import DB_PATH, PATHS
 
 parser = argparse.ArgumentParser(description="Add a new person record")
 parser.add_argument("--father", type=int, help="Pre-fill Father ID")
@@ -86,7 +88,6 @@ def add_record():
         "buried_block, buried_tour_link, business, occupation, bio, notes) "
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
-
 
     data = (
         first_name, middle_name, last_name, title, nick_name, married_name, father, mother,

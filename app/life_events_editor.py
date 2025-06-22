@@ -2,11 +2,13 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
-from .config import PATHS, DB_PATH
 import webbrowser
 from datetime import datetime
-from context_menu import create_context_menu
-from date_utils import parse_date_input, format_date_for_display
+
+#Local Imports
+from app.config import PATHS, DB_PATH
+from app.context_menu import create_context_menu
+from app.date_utils import parse_date_input, format_date_for_display
 
 def open_link(link):
     if link:

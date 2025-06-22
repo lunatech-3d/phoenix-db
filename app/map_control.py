@@ -5,9 +5,11 @@ import sys
 import webbrowser
 import sqlite3
 import geopandas as gpd
-from config import DB_PATH
 from datetime import datetime
 from shapely.geometry import Polygon
+
+#Local Imports
+from app.config import DB_PATH, PATHS
 
 class MapController:
     _instance = None

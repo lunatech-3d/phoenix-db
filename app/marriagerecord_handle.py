@@ -2,9 +2,10 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
-from config import DB_PATH
-from .config import DB_PATH, PATHS
-from person_search import search_people as lookup_people
+
+#Local Imports
+from app.config import DB_PATH, PATHS
+from app.person_search import search_people as lookup_people
 
 # Connect to the database
 connection = sqlite3.connect(DB_PATH)

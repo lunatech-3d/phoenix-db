@@ -2,8 +2,10 @@ import tkinter as tk
 from tkinter import ttk
 import sqlite3
 import sys
-from .config import PATHS, DB_PATH
 from tkinter import messagebox
+
+#Local Imports
+from app.config import PATHS, DB_PATH
 
 # Database connection
 conn = sqlite3.connect(DB_PATH)  # Replace with the actual path to your database

@@ -3,9 +3,11 @@ import sys
 import subprocess
 import tkinter as tk
 import re
-from .config import DB_PATH, PATHS
 from datetime import datetime
 from tkinter import ttk, messagebox
+
+#Local Imports
+from app.config import DB_PATH, PATHS
 
 # Connect to the database
 connection = sqlite3.connect(DB_PATH)
@@ -325,7 +327,7 @@ def on_double_click(event):
             if response:
                 # Close current window and open the edit person script
                 root.destroy()  # Closes the main window, adjust as needed if multiple windows are open
-                subprocess.run([sys.executable, PATHS.editme, str(person_id)])
+                subprocess.run([sys.executable, "-m", "app.editme", str(person_id)])
         else:
             # Handle other columns double-click for editing membership
             edit_membership_window(membership_id)

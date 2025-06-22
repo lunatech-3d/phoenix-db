@@ -1,9 +1,11 @@
 import sqlite3
 import tkinter as tk
 import sys
-from .config import PATHS, DB_PATH
 from tkinter import ttk, messagebox
 from tkinter import filedialog
+
+#Local Imports
+from app.config import PATHS, DB_PATH
 
 # Connect to the database
 connection = sqlite3.connect(DB_PATH)

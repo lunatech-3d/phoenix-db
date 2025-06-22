@@ -8,6 +8,7 @@ import subprocess
 from tkinter import filedialog
 from datetime import datetime
 
+#Local Imports
 from app.config import PATHS, DB_PATH
 from app.date_utils import parse_date_input, format_date_for_display, add_date_format_menu
 
@@ -269,7 +270,7 @@ def edit_mayor_form():
 
     def open_main_rec():
         print(f"Mayor ID is: {main_rec_id}")
-        subprocess.Popen([sys.executable, PATHS.editme, str(main_rec_id)])
+        subprocess.Popen([sys.executable, "-m", "app.editme", str(main_rec_id)])
         window.destroy()
     
     window_width = 600

@@ -2,8 +2,10 @@ import tkinter as tk
 from tkinter import ttk
 import sqlite3
 import sys
-from .config import DB_PATH, PATHS
 from tkinter import messagebox
+
+#Local Imports
+from app.config import DB_PATH, PATHS
 
 def refresh_sources():
     """ Fetch sources from the database and update the tree view """

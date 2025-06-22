@@ -2,10 +2,12 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
-from .config import PATHS, DB_PATH
-from edit_deed_dialog import EditDeedDialog
-from add_deed_dialog import AddDeedDialog
-from geodata import (
+
+#Local Imports
+from app.config import PATHS, DB_PATH
+from app.edit_deed_dialog import EditDeedDialog
+from app.add_deed_dialog import AddDeedDialog
+from app.geodata import (
     has_geojson_data,
     manage_deed_geodata,
     view_all_geodata,

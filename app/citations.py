@@ -2,8 +2,10 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
-from .config import DB_PATH, PATHS
 import subprocess
+
+#Local Imports
+from app.config import DB_PATH, PATHS
 
 def fetch_sources():
     """ Fetches source titles and ids from the database for the dropdown """

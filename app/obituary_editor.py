@@ -3,10 +3,10 @@ from tkinter import ttk, messagebox
 import sqlite3
 import os
 import sys
-from config import DB_PATH, PATHS
-import webbrowser
-from .config import DB_PATH, PATHS
-from date_utils import parse_date_input, format_date_for_display
+
+#Local Imports
+from app.config import DB_PATH, PATHS
+from app.date_utils import parse_date_input, format_date_for_display
 
 def open_link(link):
     if link:

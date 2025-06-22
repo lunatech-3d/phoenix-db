@@ -2,7 +2,9 @@ import tkinter as tk
 from tkinter import ttk
 import sqlite3
 import sys
-from .config import DB_PATH, PATHS
+
+# Local Imports
+from app.config import DB_PATH, PATHS
 
 # Connect to the database
 conn = sqlite3.connect(DB_PATH)

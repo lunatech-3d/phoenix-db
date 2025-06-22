@@ -3,11 +3,13 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import json
 import sys
-from config import DB_PATH
 import requests
 from PIL import Image, ImageTk
 from io import BytesIO
 import math
+
+#Local Imports
+from app.config import DB_PATH, PATHS
 
 # Constants for OpenStreetMap
 OSM_TILE_SIZE = 256  # Standard OSM tile size in pixels

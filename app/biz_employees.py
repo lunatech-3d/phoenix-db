@@ -1,9 +1,12 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
-from date_utils import parse_date_input, format_date_for_display
-from biz_linkage import open_biz_linkage_popup
-from .config import DB_PATH, PATHS
+
+#Local Imports
+from app.config import DB_PATH, PATHS
+from app.date_utils import parse_date_input, format_date_for_display
+from app.biz_linkage import open_biz_linkage_popup
+
 
 class EmployeeForm:
     def __init__(self, root, person_id=None, employment_id=None, biz_id=None):        

@@ -1,9 +1,10 @@
-
 import tkinter as tk
 import sys
-from .config import DB_PATH, PATHS
 from tkinter import ttk
 import sqlite3
+
+#Local Imports
+from app.config import DB_PATH, PATHS
 
 def open_biz_linkage_popup(callback):
     def refresh_tree():

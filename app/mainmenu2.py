@@ -9,13 +9,11 @@ from tkinter import ttk
 from tkinter import filedialog
 from PIL import ImageTk, Image
 
-
 #Local Imports
-from .config import DB_PATH, PATHS
-from .person_search import search_people
+from app.config import DB_PATH, PATHS
+from app.person_search import search_people
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 
 # Connect to the database
 connection = sqlite3.connect(DB_PATH)
@@ -29,7 +27,7 @@ def close_form():
 
 
 def launch_event_editor():
-    subprocess.Popen([sys.executable, PATHS.events])
+    subprocess.Popen([sys.executable, "-m", "app.events"])
 
 def open_address_management():
     subprocess.Popen([sys.executable, "-m", "app.address_management"])
@@ -181,7 +179,7 @@ def build_a_tree():
     selected_item = tree.focus()
     if selected_item:
         record_id = tree.item(selected_item)['values'][1]
-        subprocess.run([sys.executable, PATHS.buildatree, str(record_id)])
+        subprocess.run([sys.executable, "-m" "app.buildatree", str(record_id)])
     else:
         messagebox.showinfo("No One Selected", "Please select a record in the table.")
 
@@ -190,27 +188,27 @@ def build_an_ancestor_tree():
     selected_item = tree.focus()
     if selected_item:
         record_id = tree.item(selected_item)['values'][1]
-        subprocess.run([sys.executable, PATHS.buildancestortree, str(record_id)])
+        subprocess.run([sys.executable, "-m", "app.buildancestortree", str(record_id)])
     else:
         messagebox.showinfo("No One Selected", "Please select a record in the table.")
 
 
 def view_busineses():
     # Run the showbusinesses.py script with the necessary arguments
-        subprocess.run([sys.executable, PATHS.showbusinesses])
+        subprocess.run([sys.executable, "-m", "app.showbusinesses"])
 
 def view_residents():
     # Run the showresidents.py script with the necessary arguments
-        subprocess.run([sys.executable, PATHS.showresidents])
+        subprocess.run([sys.executable, "-m", "app.showresidents"])
 
 def view_sources():
      # Run the sources.py script with the necessary arguments
-        subprocess.run([sys.executable, PATHS.sources])
+        subprocess.run([sys.executable, "-m", "app.sources"])
         
 
 def view_addresses():
     # Run the viewtheaddresses.py script with the necessary arguments
-        subprocess.run([sys.executable, PATHS.viewtheaddresses])
+        subprocess.run([sys.executable, "-m", "app.viewtheaddresses"])
         
 def view_mayors():
     # Run the showmayors.py script with the necessary arguments
@@ -219,18 +217,18 @@ def view_mayors():
 
 def view_doc_types():
     # Run the doctypesupport.py script
-        subprocess.run([sys.executable, PATHS.doctypesupport])
+        subprocess.run([sys.executable, "-m", "app.doctypesupport"])
 def view_census_recs():
     # Run the showcensusrecs.py script
-        subprocess.run([sys.executable, PATHS.showcensusrecs])
+        subprocess.run([sys.executable,"-m", "app.showcensusrecs"])
 
 def view_orgs():
     # Run the orgs.py script
-        subprocess.run([sys.executable, PATHS.orgs])
+        subprocess.run([sys.executable, "-m", "app.orgs"])
 
 def view_members():
     # Run the members.py script
-        subprocess.run([sys.executable, PATHS.members])
+        subprocess.run([sys.executable, "-m", "app.members"])
 
 
 # Function to add a census record
@@ -285,7 +283,7 @@ def open_edit_form(event):
 
     # Check if record_id is not empty
     if record_id:
-        subprocess.Popen([sys.executable, os.path.join("app", PATHS.editme), str(record_id)])
+        subprocess.Popen([sys.executable, os.path.join("app", "-m", "app.editme"), str(record_id)])
 
     else:
         messagebox.showinfo("No Record Found", "The record you're trying to access does not exist.")
@@ -422,18 +420,18 @@ def delete_record():
 
 # Function to open the add form
 def open_add_form():
-    subprocess.Popen([sys.executable, PATHS.addme])
+    subprocess.Popen([sys.executable, "-m", "app.addme"])
 
 
 def open_business_management():
-    subprocess.Popen([sys.executable, PATHS.business])
+    subprocess.Popen([sys.executable, "-m", "app.business"])
     
 # Function to open the census form for the selected record
 def open_census_window():
     selected_item = tree.focus()
     if selected_item:  # Check if a record is selected
         record_id = tree.item(selected_item)['values'][0]
-        subprocess.Popen([sys.executable, PATHS.censusform, str(record_id)])
+        subprocess.Popen([sys.executable, "-m", "app.censusform", str(record_id)])
     else:
         messagebox.showinfo("No One Selected", "Please select a record in the table.")
 

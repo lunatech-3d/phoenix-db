@@ -1,10 +1,12 @@
 import sqlite3
 import tkinter as tk
 import sys
-from .config import DB_PATH, PATHS
 from tkinter import ttk, messagebox
 import webbrowser
 import subprocess
+
+#Local Imports
+from app.config import DB_PATH, PATHS
 
 
 # Connect to the database
@@ -92,7 +94,7 @@ def create_matching_interface():
                 webbrowser.open(url)
             elif col == '#5':  # People ID is the fifth column
                 person_id = tree.item(item, "values")[4]
-                subprocess.run([sys.executable, PATHS.editme, str(person_id)])
+                subprocess.run([sys.executable, "-m", "app.editme", str(person_id)])
 
     tree.bind("<Double-1>", open_url)
 

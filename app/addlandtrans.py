@@ -3,9 +3,10 @@ from tkinter import ttk
 from tkinter import messagebox
 from datetime import datetime
 import sys
-from .config import DB_PATH, PATHS  
 import sqlite3
 
+#Local Imports
+from app.config import DB_PATH, PATHS  
 
 connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
@@ -62,7 +63,6 @@ def load_people(sort_by="Last Name", order="ASC", tree_view=None):
         tree_view.insert("", tk.END, values=values, tags=(record_id,))
         
     tree_view.update_idletasks()
-
 
 
 def on_column_header_double_click(column):

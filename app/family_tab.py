@@ -1,5 +1,7 @@
 import sys
-from .config import PATHS, DB_PATH
+
+#Local Imports
+from app.config import PATHS, DB_PATH
 
 def create_family_tab(notebook, person_id):
 

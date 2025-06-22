@@ -5,8 +5,10 @@ import sqlite3
 import sys
 from datetime import datetime
 import subprocess
-from config import DB_PATH, PATHS
-from person_search import search_people
+
+#Local Imports
+from app.config import DB_PATH, PATHS
+from app.person_search import search_people
 
 connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
@@ -389,7 +391,7 @@ def open_person_linkage_popup(parent_id, role="child", refresh_callback=None):
             if not messagebox.askyesno("Confirm", summary):
                 return
 
-            cmd = ["python", PATHS.addme]
+            cmd = ["python", "-m", "app.addme"]
             if father:
                 cmd += ["--father", str(father)]
             if mother:
@@ -398,7 +400,7 @@ def open_person_linkage_popup(parent_id, role="child", refresh_callback=None):
             if refresh_callback:
                 refresh_callback()
         else:
-            cmd = [sys.executable, PATHS.addme]
+            cmd = [sys.executable, "-m", "app.addme"]
             subprocess.run(cmd)
         window.destroy()
 

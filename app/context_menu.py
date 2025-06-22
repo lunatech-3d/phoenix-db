@@ -1,10 +1,10 @@
-# context_menu.py
-
 import tkinter as tk
 from tkinter import ttk
 import sys
-from .config import PATHS, DB_PATH
 import subprocess
+
+#Local Imports
+from app.config import PATHS, DB_PATH
 
 def paste_from_clipboard(entry):
     try:

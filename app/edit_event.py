@@ -2,8 +2,10 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
-from .config import PATHS, DB_PATH
-from date_utils import parse_date_input, format_date_for_display
+
+#Local Imports
+from app.config import PATHS, DB_PATH
+from app.date_utils import parse_date_input, format_date_for_display
 
 class EditEventForm:
     def __init__(self, master, event_id=None):

@@ -1,11 +1,12 @@
-# business.py
 import tkinter as tk
 import sys
-from .config import DB_PATH, PATHS
 from tkinter import ttk, messagebox
-from date_utils import format_date_for_display
 import sqlite3
 import webbrowser
+
+#Local Imports
+from app.config import DB_PATH, PATHS
+from app.date_utils import format_date_for_display
 
 class BusinessManager:
     def __init__(self, root):
@@ -168,7 +169,7 @@ class BusinessManager:
         if not selected:
             return
         biz_id = self.tree.item(selected[0])['values'][0]
-        import editbiz
+        import app.editbiz
         editbiz.open_edit_business_form(biz_id)
 
     

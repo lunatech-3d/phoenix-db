@@ -1,9 +1,11 @@
 import sqlite3
 import json
 import sys
-from .config import PATHS, DB_PATH
 from pathlib import Path
 import webbrowser
+
+#Local Imports
+from app.config import PATHS, DB_PATH
 
 # Define paths
 script_dir = Path(__file__).resolve().parent

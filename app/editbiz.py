@@ -6,9 +6,10 @@ import sqlite3
 import webbrowser
 import urllib.parse
 import sys 
+from datetime import datetime
 
+#Local Imports
 from app.config import PATHS, DB_PATH
-from app.datetime import datetime
 from app.date_utils import parse_date_input, format_date_for_display, date_sort_key
 from app.context_menu import create_context_menu, apply_context_menu_to_all_entries
 from app.person_linkage import person_search_popup
@@ -1307,7 +1308,7 @@ class EditBusinessForm:
             result = self.cursor.fetchone()
             if result:
                 person_id = result[0]
-                subprocess.Popen([sys.executable, PATHS.editme, str(person_id)])
+                subprocess.Popen([sys.executable, "-m", "app.editme", str(person_id)])
             else:
                 messagebox.showinfo("Info", f"No linked person found for '{person_name}'.")
 

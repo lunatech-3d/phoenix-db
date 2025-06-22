@@ -1,11 +1,12 @@
-
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
-from .config import DB_PATH, PATHS
 import os
-from context_menu import create_context_menu
+
+#Local Imports
+from app.config import DB_PATH, PATHS
+from app.context_menu import create_context_menu
 
 
 def create_embedded_bio_editor(parent, bio_text_from_db, person_id):

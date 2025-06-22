@@ -2,10 +2,12 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
-from .config import PATHS, DB_PATH
-from datetime import datetime
 import re
-from add_deed_dialog import AddDeedDialog  # Import the base class
+from datetime import datetime
+
+#Local Imports
+from app.config import PATHS, DB_PATH
+from app.add_deed_dialog import AddDeedDialog  # Import the base class
 
 class EditDeedDialog(AddDeedDialog):
     """Dialog for editing deed records. Inherits from AddDeedDialog."""
