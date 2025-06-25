@@ -426,6 +426,9 @@ def open_add_form():
 def open_business_management():
     subprocess.Popen([sys.executable, "-m", "app.business"])
     
+def open_inst_management():
+    subprocess.Popen([sys.executable, "-m", "app.institution"])
+
 # Function to open the census form for the selected record
 def open_census_window():
     selected_item = tree.focus()
@@ -458,6 +461,7 @@ menu.add_cascade(label="File", menu=file_menu)
 file_menu.add_command(label="Sources Table", command=view_sources)
 file_menu.add_command(label="Address Table", command=view_addresses)
 file_menu.add_command(label="Business Management", command=open_business_management)
+file_menu.add_command(label="Institution Management", command=open_inst_management)
 file_menu.add_command(label="Event Management", command=launch_event_editor)
 file_menu.add_command(label="Resident Table", command=view_residents)
 file_menu.add_command(label="Doc Type Table", command=view_doc_types)
