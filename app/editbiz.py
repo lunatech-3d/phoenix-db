@@ -5,8 +5,7 @@ import subprocess
 import sqlite3
 import webbrowser
 import urllib.parse
-import sys 
-from datetime import datetime
+import sys
 
 #Local Imports
 from app.config import PATHS, DB_PATH
@@ -563,16 +562,6 @@ class EditBusinessForm:
 
         reverse = self._owner_sort_state.get(col, False)
 
-        def date_sort_key(val):
-            if not val:
-                return datetime.max
-            for fmt in ("%m-%d-%Y", "%m-%Y", "%Y"):
-                try:
-                    return datetime.strptime(val, fmt)
-                except ValueError:
-                    continue
-            return datetime.max
-
         items = [(self.owner_tree.set(k, col), k) for k in self.owner_tree.get_children('')]
 
         if col.lower() in ("start", "end", "start date", "end date"):
@@ -803,16 +792,6 @@ class EditBusinessForm:
 
         reverse = self._location_sort_state.get(col, False)
 
-        def date_sort_key(val):
-            if not val:
-                return datetime.max
-            for fmt in ("%m-%d-%Y", "%m-%Y", "%Y"):
-                try:
-                    return datetime.strptime(val, fmt)
-                except ValueError:
-                    continue
-            return datetime.max
-
         items = [(self.location_tree.set(k, col), k) for k in self.location_tree.get_children('')]
 
         if col.lower() in ("start", "end", "start date", "end date"):
@@ -993,16 +972,6 @@ class EditBusinessForm:
             self._employee_sort_state = {}
 
         reverse = self._employee_sort_state.get(col, False)
-
-        def date_sort_key(val):
-            if not val:
-                return datetime.max
-            for fmt in ("%m-%d-%Y", "%m-%Y", "%Y"):
-                try:
-                    return datetime.strptime(val, fmt)
-                except ValueError:
-                    continue
-            return datetime.max  # fallback if format parsing fails
 
         items = [(self.employee_tree.set(k, col), k) for k in self.employee_tree.get_children('')]
 
@@ -1325,22 +1294,10 @@ class EditBusinessForm:
 
             reverse = self._bizevent_sort_state.get(col, False)
 
-            def date_sort_key(val):
-                # Extract first part of a range like "03-1901 – 05-1902"
-                val = val.split("–")[0].strip()
-                if val.startswith(("Abt", "Bef", "Aft")):
-                    val = val[4:].strip()
-                for fmt in ("%m-%d-%Y", "%m-%Y", "%Y"):
-                    try:
-                        return datetime.strptime(val, fmt)
-                    except ValueError:
-                        continue
-                return datetime.max
-
             items = [(self.bizevents_tree.set(k, col), k) for k in self.bizevents_tree.get_children('')]
 
-            if col.lower() in ("date", "date_range", "start"):  # support flexible column names
-                items.sort(key=lambda item: date_sort_key(item[0]), reverse=reverse)
+            if col.lower() in ("date", "date_range", "start"):
+                items.sort(key=lambda item: date_sort_key(item[0].split("–")[0].strip()), reverse=reverse)
             else:
                 items.sort(key=lambda item: item[0].lower() if isinstance(item[0], str) else item[0], reverse=reverse)
 

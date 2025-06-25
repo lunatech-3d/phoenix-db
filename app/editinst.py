@@ -1,7 +1,6 @@
 import subprocess
 import sqlite3
 import sys
-from datetime import datetime
 import tkinter as tk
 from tkinter import ttk, messagebox
 import webbrowser
@@ -794,22 +793,6 @@ class EditInstitutionForm:
             if url and url.startswith("http"):
                 webbrowser.open(url, new=2)
 
-    def sort_events(self, col):
-        if not hasattr(self, "_event_sort"):
-            self._event_sort = {}
-
-        reverse = self._event_sort.get(col, False)
-
-        def date_sort_key(val):
-            if not val:
-                return datetime.max
-            for fmt in ("%m-%d-%Y", "%m-%Y", "%Y"):
-                try:
-                    return datetime.strptime(val, fmt)
-                except ValueError:
-                    continue
-            return datetime.max
-
         items = [(self.event_tree.set(k, col), k) for k in self.event_tree.get_children("")]
         
         if col == "dates":
@@ -824,7 +807,7 @@ class EditInstitutionForm:
 
 def open_edit_institution_form(inst_id=None):
     win = tk.Tk() if inst_id is None else tk.Toplevel()
-    win.geometry("900x800")
+    win.geometry("1200x800")
     EditInstitutionForm(win, inst_id)
     win.grab_set()
 
@@ -833,5 +816,5 @@ if __name__ == "__main__":
     arg = int(sys.argv[1]) if len(sys.argv) > 1 else None
     root = tk.Tk()
     EditInstitutionForm(root, arg)
-    root.geometry("900x800")
+    root.geometry("1200x800")
     root.mainloop()

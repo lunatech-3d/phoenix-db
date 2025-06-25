@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 import tkinter as tk
 from tkinter import Menu, messagebox
 
@@ -98,8 +98,39 @@ def add_date_format_menu(widget):
 
 # Sort key function using parsed ISO dates
 def date_sort_key(value):
+    """Return a datetime suitable for sorting treeview columns.
+
+    Accepts display strings such as ``YYYY``, ``MM-YYYY`` or ``MM-DD-YYYY`` and
+    optionally prefixed with ``Abt``, ``Bef`` or ``Aft``.  Values that cannot be
+    parsed will sort to the end.
+    """
+
+    if not value:
+        return datetime.max
     try:
-        parsed, _ = parse_date_input(value)
-        return datetime.strptime(parsed, "%Y-%m-%d")
+        iso, precision = parse_date_input(value)
+
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", iso):
+            dt = datetime.strptime(iso, "%Y-%m-%d")
+        elif re.match(r"^\d{4}-\d{2}$", iso):
+            dt = datetime.strptime(iso, "%Y-%m")
+        elif re.match(r"^\d{4}$", iso):
+            dt = datetime.strptime(iso, "%Y")
+        else:
+            return datetime.max
+
+        if precision == "BEFORE":
+            dt -= timedelta(days=1)
+        elif precision == "AFTER":
+            if len(iso) == 4:
+                dt = datetime(dt.year + 1, 1, 1)
+            elif len(iso) == 7:
+                year = dt.year + (1 if dt.month == 12 else 0)
+                month = 1 if dt.month == 12 else dt.month + 1
+                dt = datetime(year, month, 1)
+            else:
+                dt += timedelta(days=1)
+
+        return dt
     except Exception:
         return datetime.max
