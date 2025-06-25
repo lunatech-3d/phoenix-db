@@ -966,3 +966,23 @@ records via the parent_township_id field.
 | `inst_role`     | TEXT      | Yes      | Yes         |                |
 | `role_category` | TEXT      | No       | No          |                |
 | `role_description` | TEXT   | No       | No          |                |
+
+
+## 🧩 Table: `Inst_Event`
+> Records notable events tied to an institution.
+
+| Column Name | Data Type | Not Null | Primary Key | Default Value |
+|-------------|-----------|----------|-------------|---------------|
+| `inst_event_id` | INTEGER | No | Yes | |
+| `inst_id` | INTEGER | Yes | No | |
+| `event_type` | TEXT | No | No | |
+| `event_date` | TEXT | No | No | |
+| `event_date_precision` | TEXT | No | No | |
+| `end_date` | TEXT | No | No | |
+| `end_date_precision` | TEXT | No | No | |
+| `description` | TEXT | No | No | |
+| `person_id` | INTEGER | No | No | |
+| `source_id` | INTEGER | No | No | |
+| `link_url` | TEXT | No | No | |
+| `created_at` | TIMESTAMP | No | No | CURRENT_TIMESTAMP |
+| `original_text` | TEXT | No | No | |

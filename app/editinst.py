@@ -1,6 +1,7 @@
 import subprocess
 import sqlite3
 import sys
+from datetime import datetime
 import tkinter as tk
 from tkinter import ttk, messagebox
 import webbrowser
@@ -313,8 +314,8 @@ class EventForm:
 
     def load_data(self):
         self.cursor.execute(
-            """SELECT event_type, event_date, event_date_precision, end_date, end_date_precision, description, person_id, link_url
-               original_text, person_id, link_url
+            """SELECT event_type, event_date, event_date_precision, end_date, end_date_precision,
+               description, original_text, person_id, link_url
                FROM Inst_Event WHERE inst_event_id=?""",
             (self.event_id,),
         )
@@ -328,7 +329,7 @@ class EventForm:
         self.entries["Start Date"].insert(0, format_date_for_display(sdate, sprec) if sdate else "")
         self.entries["End Date"].insert(0, format_date_for_display(edate, eprec) if edate else "")
         self.entries["Description"].insert(0, desc or "")
-        self.entries["Original Text"].insert("1.0", original or "")
+        self.entries["Original Text"].insert("1.0", original_text or "")
         self.entries["Link URL"].insert(0, link or "")
         if pid:
             self.set_person_id(pid)
@@ -796,12 +797,26 @@ class EditInstitutionForm:
     def sort_events(self, col):
         if not hasattr(self, "_event_sort"):
             self._event_sort = {}
+
         reverse = self._event_sort.get(col, False)
+
+        def date_sort_key(val):
+            if not val:
+                return datetime.max
+            for fmt in ("%m-%d-%Y", "%m-%Y", "%Y"):
+                try:
+                    return datetime.strptime(val, fmt)
+                except ValueError:
+                    continue
+            return datetime.max
+
         items = [(self.event_tree.set(k, col), k) for k in self.event_tree.get_children("")]
+        
         if col == "dates":
             items.sort(key=lambda item: date_sort_key(item[0].split("–")[0].strip()), reverse=reverse)
         else:
             items.sort(key=lambda item: item[0].lower() if isinstance(item[0], str) else item[0], reverse=reverse)
+        
         for idx, (_, k) in enumerate(items):
             self.event_tree.move(k, "", idx)
         self._event_sort[col] = not reverse

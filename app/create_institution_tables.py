@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS Inst_Event (
     person_id INTEGER,
     source_id INTEGER,
     link_url TEXT,
+    original_text TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
