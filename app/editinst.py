@@ -23,15 +23,18 @@ class StaffForm:
         self.setup_form()
         if staff_id:
             self.load_data()
+        elif person_id:
+            self.set_person_id(person_id)
 
     def setup_form(self):
         row = 0
-        ttk.Label(self.master, text="Person ID:").grid(row=row, column=0, sticky="e", padx=5, pady=5)
-        pid_entry = ttk.Entry(self.master, width=30)
-        pid_entry.grid(row=row, column=1, sticky="w", padx=5, pady=5)
-        self.entries["Person ID"] = pid_entry
-        create_context_menu(pid_entry)
-        ttk.Button(self.master, text="Lookup", command=lambda: person_search_popup(self.set_person_id)).grid(row=row, column=2, padx=5)
+        ttk.Label(self.master, text="Selected Person:").grid(row=row, column=0, sticky="e", padx=5, pady=5)
+        pframe = ttk.Frame(self.master)
+        pframe.grid(row=row, column=1, columnspan=2, sticky="w", padx=5, pady=5)
+        self.person_display = ttk.Label(pframe, text="(none)", width=40, relief="sunken", anchor="w")
+        self.person_display.pack(side="left", padx=(0, 5))
+        ttk.Button(pframe, text="Search", command=lambda: person_search_popup(self.set_person_id)).pack(side="left")
+        ttk.Button(pframe, text="Clear", command=lambda: self.set_person_id(None)).pack(side="left")
         row += 1
         for label in ["Title", "Start Date", "End Date", "Notes"]:
             ttk.Label(self.master, text=label + ":").grid(row=row, column=0, sticky="e", padx=5, pady=5)
@@ -47,9 +50,25 @@ class StaffForm:
         apply_context_menu_to_all_entries(self.master)
 
     def set_person_id(self, pid):
-        self.entries["Person ID"].delete(0, tk.END)
-        self.entries["Person ID"].insert(0, pid)
-        self.person_id = pid
+        if pid is None:
+            self.person_display.config(text="(none)")
+            self.person_id = None
+            return
+        self.cursor.execute(
+            "SELECT first_name, middle_name, last_name, married_name FROM People WHERE id=?",
+            (pid,),
+        )
+        row = self.cursor.fetchone()
+        if row:
+            name_parts = [row[0], row[1], row[2]]
+            name = " ".join(part for part in name_parts if part)
+            if row[3]:
+                name += f" ({row[3]})"
+            self.person_display.config(text=name)
+            self.person_id = pid
+        else:
+            self.person_display.config(text="(not found)")
+            self.person_id = None
 
     def load_data(self):
         self.cursor.execute(
@@ -78,11 +97,11 @@ class StaffForm:
         except ValueError as e:
             messagebox.showerror("Date Error", str(e))
             return
-        pid = self.entries["Person ID"].get().strip()
+        pid = self.person_id
         title = self.entries["Title"].get().strip()
         notes = self.entries["Notes"].get().strip()
         if not pid:
-            messagebox.showerror("Missing", "Person ID required")
+            messagebox.showerror("Missing", "Please select a person")
             return
         if self.staff_id:
             self.cursor.execute(
@@ -275,6 +294,13 @@ class EventForm:
         ttk.Button(self.master, text="Lookup", command=lambda: person_search_popup(self.set_person_id)).grid(row=row, column=2, padx=5)
         row += 1
 
+        ttk.Label(self.master, text="Original Text:").grid(row=row, column=0, sticky="ne", padx=5, pady=5)
+        otext = tk.Text(self.master, width=50, height=6)
+        otext.grid(row=row, column=1, columnspan=2, sticky="w", padx=5, pady=5)
+        self.entries["Original Text"] = otext
+        create_context_menu(otext)
+        row += 1
+
         btn_frame = ttk.Frame(self.master)
         btn_frame.grid(row=row, column=0, columnspan=3, pady=10)
         ttk.Button(btn_frame, text="Save", command=self.save).pack(side="left", padx=5)
@@ -288,6 +314,7 @@ class EventForm:
     def load_data(self):
         self.cursor.execute(
             """SELECT event_type, event_date, event_date_precision, end_date, end_date_precision, description, person_id, link_url
+               original_text, person_id, link_url
                FROM Inst_Event WHERE inst_event_id=?""",
             (self.event_id,),
         )
@@ -296,11 +323,12 @@ class EventForm:
             messagebox.showerror("Error", "Event record not found.")
             self.master.destroy()
             return
-        etype, sdate, sprec, edate, eprec, desc, pid, link = row
+        etype, sdate, sprec, edate, eprec, desc, original_text, pid, link = row
         self.entries["Event Type"].insert(0, etype or "")
         self.entries["Start Date"].insert(0, format_date_for_display(sdate, sprec) if sdate else "")
         self.entries["End Date"].insert(0, format_date_for_display(edate, eprec) if edate else "")
         self.entries["Description"].insert(0, desc or "")
+        self.entries["Original Text"].insert("1.0", original or "")
         self.entries["Link URL"].insert(0, link or "")
         if pid:
             self.set_person_id(pid)
@@ -320,18 +348,19 @@ class EventForm:
             sdate, sprec,
             edate, eprec,
             self.entries["Description"].get().strip(),
+            self.entries["Original Text"].get("1.0", tk.END).strip(),
             self.entries["Person ID"].get().strip() or None,
             self.entries["Link URL"].get().strip(),
         ]
 
         if self.event_id:
             self.cursor.execute(
-                """UPDATE Inst_Event SET event_type=?, event_date=?, event_date_precision=?, end_date=?, end_date_precision=?, description=?, person_id=?, link_url=? WHERE inst_event_id=?""",
+                """UPDATE Inst_Event SET event_type=?, event_date=?, event_date_precision=?, end_date=?, end_date_precision=?, description=?, original_text=?, person_id=?, link_url=? WHERE inst_event_id=?""",
                 data + [self.event_id],
             )
         else:
             self.cursor.execute(
-                """INSERT INTO Inst_Event (inst_id, event_type, event_date, event_date_precision, end_date, end_date_precision, description, person_id, link_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                """INSERT INTO Inst_Event (inst_id, event_type, event_date, event_date_precision, end_date, end_date_precision, description, original_text, person_id, link_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 [self.inst_id] + data,
             )
         self.conn.commit()
@@ -397,42 +426,20 @@ class EditInstitutionForm:
 
         self.staff_frame = ttk.LabelFrame(self.master, text="Staff")
         self.staff_frame.pack(fill="both", expand=False, padx=10, pady=5)
-
         self.staff_tree = ttk.Treeview(
             self.staff_frame,
             columns=("id", "person", "title", "start", "end", "notes"),
             show="headings",
             height=5,
         )
-
-        self.staff_frame = ttk.LabelFrame(self.master, text="Staff")
-        self.staff_frame.pack(fill="both", expand=False, padx=10, pady=5)
-
-        self.staff_tree = ttk.Treeview(
-            self.staff_frame,
-            columns=("id", "person", "title", "start", "end", "notes"),
-            show="headings",
-            height=5,
-        )
-
-        # Define headings and corresponding column widths
-        columns_config = {
-            "id": {"heading": "ID", "width": 0, "stretch": False},
-            "person": {"heading": "Person", "width": 200, "stretch": False},
-            "title": {"heading": "Title", "width": 150, "stretch": False},
-            "start": {"heading": "Start", "width": 100, "stretch": False},
-            "end": {"heading": "End", "width": 100, "stretch": False},
-            "notes": {"heading": "Notes", "width": 200, "stretch": True},  # only this stretches
-        }
-
-        for col, config in columns_config.items():
-            self.staff_tree.heading(col, text=config["heading"], command=lambda c=col: self.sort_staff(c))
-            self.staff_tree.column(col, width=config["width"], stretch=config["stretch"])
-
+        headings = ["ID", "Person", "Title", "Start", "End", "Notes"]
+        for col, h in zip(self.staff_tree["columns"], headings):
+            self.staff_tree.heading(col, text=h, command=lambda c=col: self.sort_staff(c))
+            width = 50 if col in ("start", "end") else 150
+            self.staff_tree.column(col, width=width)
+        self.staff_tree.column("id", width=0, stretch=False)
         self.staff_tree.pack(fill="both", expand=True, padx=5, pady=5)
         self.staff_tree.bind("<Double-1>", self.on_staff_double)
-
-        # Buttons
         btns = ttk.Frame(self.staff_frame)
         btns.pack(fill="x")
         ttk.Button(btns, text="Add", command=self.add_staff).pack(side="left", padx=5)
@@ -450,7 +457,7 @@ class EditInstitutionForm:
         headings = ["ID", "Group", "Person", "Role", "Start", "End", "Notes"]
         for col, h in zip(self.member_tree["columns"], headings):
             self.member_tree.heading(col, text=h, command=lambda c=col: self.sort_members(c))
-            width = 35 if col in ("start", "end") else 150
+            width = 60 if col in ("start", "end") else 150
             self.member_tree.column(col, width=width)
         self.member_tree.column("id", width=0, stretch=False)
         self.member_tree.pack(fill="both", expand=True, padx=5, pady=5)
@@ -802,7 +809,7 @@ class EditInstitutionForm:
 
 def open_edit_institution_form(inst_id=None):
     win = tk.Tk() if inst_id is None else tk.Toplevel()
-    win.geometry("1200x800")
+    win.geometry("900x800")
     EditInstitutionForm(win, inst_id)
     win.grab_set()
 
@@ -811,5 +818,5 @@ if __name__ == "__main__":
     arg = int(sys.argv[1]) if len(sys.argv) > 1 else None
     root = tk.Tk()
     EditInstitutionForm(root, arg)
-    root.geometry("1200x800")
+    root.geometry("900x800")
     root.mainloop()

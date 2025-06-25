@@ -77,6 +77,25 @@ Fields:
 
 ---
 
+### 6. `Inst_Event`
+
+Records notable events tied to an institution.
+
+Fields:
+- `inst_event_id` (PK)
+- `inst_id`
+- `event_type`
+- `event_date`, `event_date_precision`
+- `end_date`, `end_date_precision`
+- `description`
+- `person_id`
+- `source_id`
+- `link_url``
+- `created_at`
+- `original_text`
+
+
+
 ## Usage Notes
 
 - All institutional relationships reference `inst_id` from the `Institution` table.
