@@ -1,12 +1,13 @@
 import subprocess
 import sqlite3
 import sys
+from datetime import datetime
 import tkinter as tk
 from tkinter import ttk, messagebox
 import webbrowser
 
 from app.config import DB_PATH
-from app.date_utils import parse_date_input, format_date_for_display, date_sort_key
+from app.date_utils import parse_date_input, format_date_for_display
 from app.context_menu import create_context_menu, apply_context_menu_to_all_entries
 from app.person_linkage import person_search_popup
 
@@ -640,7 +641,11 @@ class EditInstitutionForm:
             self._staff_sort = {}
         reverse = self._staff_sort.get(col, False)
         items = [(self.staff_tree.set(k, col), k) for k in self.staff_tree.get_children("")]
-        items.sort(reverse=reverse)
+        if col in ("start", "end"):
+            items.sort(key=lambda item: date_sort_key(item[0]), reverse=reverse)
+        else:
+            items.sort(key=lambda item: item[0].lower() if isinstance(item[0], str) else item[0],
+                       reverse=reverse)
         for idx, (_, k) in enumerate(items):
             self.staff_tree.move(k, "", idx)
         self._staff_sort[col] = not reverse

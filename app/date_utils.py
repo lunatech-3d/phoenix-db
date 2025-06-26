@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 import tkinter as tk
 from tkinter import Menu, messagebox
 
@@ -96,41 +96,32 @@ def add_date_format_menu(widget):
     
     widget.bind("<Button-3>", show_context_menu)  # Right-click
 
-# Sort key function using parsed ISO dates
+# Sort key function for treeview columns
 def date_sort_key(value):
     """Return a datetime suitable for sorting treeview columns.
 
-    Accepts display strings such as ``YYYY``, ``MM-YYYY`` or ``MM-DD-YYYY`` and
-    optionally prefixed with ``Abt``, ``Bef`` or ``Aft``.  Values that cannot be
-    parsed will sort to the end.
+    The function strips optional ``ABT``, ``BEF`` or ``AFT`` prefixes and then
+    attempts to parse the remaining value.  It understands ``YYYY``,
+    ``MM-YYYY``, ``MM-DD-YYYY`` and ``YYYY-MM-DD`` formats.  Unparseable values
+    are sent to the end of the sort order by returning ``datetime.max``.
     """
 
     if not value:
         return datetime.max
+    
+    # Remove optional prefixes like "ABT" or "BEF"
+    val = re.sub(r"^(?:ABT|BEF|AFT)\s*", "", str(value).strip(), flags=re.I)
+
     try:
-        iso, precision = parse_date_input(value)
-
-        if re.match(r"^\d{4}-\d{2}-\d{2}$", iso):
-            dt = datetime.strptime(iso, "%Y-%m-%d")
-        elif re.match(r"^\d{4}-\d{2}$", iso):
-            dt = datetime.strptime(iso, "%Y-%m")
-        elif re.match(r"^\d{4}$", iso):
-            dt = datetime.strptime(iso, "%Y")
-        else:
-            return datetime.max
-
-        if precision == "BEFORE":
-            dt -= timedelta(days=1)
-        elif precision == "AFTER":
-            if len(iso) == 4:
-                dt = datetime(dt.year + 1, 1, 1)
-            elif len(iso) == 7:
-                year = dt.year + (1 if dt.month == 12 else 0)
-                month = 1 if dt.month == 12 else dt.month + 1
-                dt = datetime(year, month, 1)
-            else:
-                dt += timedelta(days=1)
-
-        return dt
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", val):
+            return datetime.strptime(val, "%Y-%m-%d")
+        if re.fullmatch(r"\d{2}-\d{2}-\d{4}", val):
+            return datetime.strptime(val, "%m-%d-%Y")
+        if re.fullmatch(r"\d{2}-\d{4}", val):
+            return datetime.strptime(val, "%m-%Y")
+        if re.fullmatch(r"\d{4}", val):
+            return datetime.strptime(val, "%Y")
     except Exception:
         return datetime.max
+
+    return datetime.max

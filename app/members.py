@@ -2,8 +2,8 @@ import sqlite3
 import sys
 import subprocess
 import tkinter as tk
-import re
 from datetime import datetime
+from app.date_utils import date_sort_key
 from tkinter import ttk, messagebox
 
 #Local Imports
@@ -407,26 +407,19 @@ member_treeview.bind("<Double-1>", on_double_click)
 member_treeview.bind("<<TreeviewSelect>>", on_member_select)
 
 def treeview_sort_column(tv, col, reverse):
-    def parse_date(date_str):
-        date_formats = [
-            "%m-%d-%Y", "%m-%d-%y",
-            "%Y", "%y",
-            "%b-%Y", "%b-%y",
-            "%B-%Y", "%B-%y"
-        ]
-        for fmt in date_formats:
-            try:
-                return datetime.strptime(date_str, fmt)
-            except ValueError:
-                continue
-        # If no format matched, return the original string for default string comparison
-        return date_str
+    """Generic Treeview column sort that understands simple date strings."""
 
-    l = [(parse_date(tv.set(k, col)), k) for k in tv.get_children('')]
-    l.sort(reverse=reverse, key=lambda x: (x[0] is None, x[0]))  # Sort by parsed date
+    items = []
+    for k in tv.get_children(''):
+        val = tv.set(k, col)
+        key = date_sort_key(val)
+        if key is datetime.max:
+            key = val.lower() if isinstance(val, str) else val
+        items.append((key, k))
 
-    for index, (val, k) in enumerate(l):
-        tv.move(k, '', index)
+    items.sort(reverse=reverse)
+    for idx, (_, k) in enumerate(items):
+        tv.move(k, '', idx)
 
     tv.heading(col, command=lambda: treeview_sort_column(tv, col, not reverse))
 
