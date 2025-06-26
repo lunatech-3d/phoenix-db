@@ -7,7 +7,7 @@ from tkinter import ttk, messagebox
 import webbrowser
 
 from app.config import DB_PATH
-from app.date_utils import parse_date_input, format_date_for_display
+from app.date_utils import parse_date_input, format_date_for_display, date_sort_key
 from app.context_menu import create_context_menu, apply_context_menu_to_all_entries
 from app.person_linkage import person_search_popup
 
@@ -798,16 +798,19 @@ class EditInstitutionForm:
             if url and url.startswith("http"):
                 webbrowser.open(url, new=2)
 
-        items = [(self.event_tree.set(k, col), k) for k in self.event_tree.get_children("")]
-        
-        if col == "dates":
-            items.sort(key=lambda item: date_sort_key(item[0].split("–")[0].strip()), reverse=reverse)
-        else:
-            items.sort(key=lambda item: item[0].lower() if isinstance(item[0], str) else item[0], reverse=reverse)
-        
-        for idx, (_, k) in enumerate(items):
-            self.event_tree.move(k, "", idx)
-        self._event_sort[col] = not reverse
+        def sort_events(self, col):
+            if not hasattr(self, "_event_sort"):
+                self._event_sort = {}
+            reverse = self._event_sort.get(col, False)
+
+            items = [(self.event_tree.set(k, col), k) for k in self.event_tree.get_children("")]   
+            if col == "dates":
+                items.sort(key=lambda item: date_sort_key(item[0].split("–")[0].strip()), reverse=reverse)
+            else:
+                items.sort(key=lambda item: item[0].lower() if isinstance(item[0], str) else item[0], reverse=reverse)
+            for idx, (_, k) in enumerate(items):
+                self.event_tree.move(k, "", idx)
+            self._event_sort[col] = not reverse
 
 
 def open_edit_institution_form(inst_id=None):

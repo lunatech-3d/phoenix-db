@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 import tkinter as tk
-from tkinter import Menu, messagebox
+from tkinter import Menu
 
 def parse_date_input(date_value):
     if not date_value:

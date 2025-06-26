@@ -71,7 +71,12 @@ from app.deeds import (
 )
 
 from app.context_menu import create_context_menu
-from app.date_utils import parse_date_input, format_date_for_display, add_date_format_menu
+from app.date_utils import (
+    parse_date_input,
+    format_date_for_display,
+    add_date_format_menu,
+    date_sort_key,
+)
 from app.map_control import MapController
 
 parser = argparse.ArgumentParser(description="Edit a person or add a new one")
