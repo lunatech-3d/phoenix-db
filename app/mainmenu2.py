@@ -429,6 +429,9 @@ def open_business_management():
 def open_inst_management():
     subprocess.Popen([sys.executable, "-m", "app.institution"])
 
+def open_gov_management():
+    subprocess.Popen([sys.executable, "-m", "app.gov"])
+
 # Function to open the census form for the selected record
 def open_census_window():
     selected_item = tree.focus()
@@ -462,6 +465,7 @@ file_menu.add_command(label="Sources Table", command=view_sources)
 file_menu.add_command(label="Address Table", command=view_addresses)
 file_menu.add_command(label="Business Management", command=open_business_management)
 file_menu.add_command(label="Institution Management", command=open_inst_management)
+file_menu.add_command(label="Government Management", command=open_gov_management)
 file_menu.add_command(label="Event Management", command=launch_event_editor)
 file_menu.add_command(label="Resident Table", command=view_residents)
 file_menu.add_command(label="Doc Type Table", command=view_doc_types)
