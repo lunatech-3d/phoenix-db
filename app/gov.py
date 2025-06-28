@@ -121,7 +121,9 @@ class GovAgencyManager:
             self.tree.insert("", "end", values=row)
 
     def add_agency(self):
-        open_edit_agency_form()
+        win = open_edit_agency_form(parent=self.root)
+        if win:
+            self.root.wait_window(win)
         self.load_agencies()
 
     def get_selected_id(self):
@@ -135,7 +137,9 @@ class GovAgencyManager:
         agency_id = self.get_selected_id()
         if not agency_id:
             return
-        open_edit_agency_form(agency_id)
+        win = open_edit_agency_form(agency_id, parent=self.root)
+        if win:
+            self.root.wait_window(win)
         self.load_agencies()
 
     def delete_agency(self):
