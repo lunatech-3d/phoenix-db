@@ -4,6 +4,7 @@ import sqlite3
 
 from app.config import DB_PATH
 from app.context_menu import create_context_menu
+from app.date_utils import format_date_for_display, date_sort_key
 from app.editgov import open_edit_agency_form
 
 
@@ -51,13 +52,15 @@ class GovAgencyManager:
         self.load_agencies()
 
     def setup_tree(self):
-        columns = ("id", "name", "jurisdiction", "type")
+        columns = ("id", "name", "jurisdiction", "type", "start", "end")
         self.tree = ttk.Treeview(self.root, columns=columns, show="headings")
 
         headings = {
             "name": "Name",
             "jurisdiction": "Jurisdiction",
             "type": "Type",
+            "start": "Start",
+            "end": "End",
         }
 
         for col in columns:
@@ -66,9 +69,11 @@ class GovAgencyManager:
             else:
                 self.tree.heading(col, text=headings.get(col, col.title()), command=lambda c=col: self.sort_by_column(c))
 
-        self.tree.column("name", width=250, anchor="w")
-        self.tree.column("jurisdiction", width=150, anchor="w")
-        self.tree.column("type", width=150, anchor="w")
+        self.tree.column("name", width=220, anchor="w")
+        self.tree.column("jurisdiction", width=140, anchor="w")
+        self.tree.column("type", width=120, anchor="w")
+        self.tree.column("start", width=80, anchor="w")
+        self.tree.column("end", width=80, anchor="w")
 
         self.tree.pack(fill="both", expand=True, padx=10, pady=10)
         self.tree.bind("<Double-1>", self.edit_agency)
@@ -83,17 +88,23 @@ class GovAgencyManager:
 
     def sort_by_column(self, col):
         items = [(self.tree.set(k, col), k) for k in self.tree.get_children("")]
-        items.sort(reverse=self.sort_column == col and not self.sort_reverse)
+        reverse = self.sort_column == col and not self.sort_reverse
+        if col in ("start", "end"):
+            items.sort(key=lambda item: date_sort_key(item[0]), reverse=reverse)
+        else:
+            items.sort(key=lambda item: item[0].lower() if isinstance(item[0], str) else item[0], reverse=reverse)
         for idx, (_, k) in enumerate(items):
             self.tree.move(k, "", idx)
-        self.sort_reverse = self.sort_column == col and not self.sort_reverse
+        self.sort_reverse = reverse
         self.sort_column = col
 
     def load_agencies(self):
         self.tree.delete(*self.tree.get_children())
 
         query = """
-            SELECT gov_agency_id, name, jurisdiction, type
+            SELECT gov_agency_id, name, jurisdiction, type,
+                   start_date, start_date_precision,
+                   end_date, end_date_precision
             FROM GovAgency
             WHERE 1=1
         """
@@ -118,7 +129,23 @@ class GovAgencyManager:
         self.cursor.execute(query, tuple(params))
 
         for row in self.cursor.fetchall():
-            self.tree.insert("", "end", values=row)
+            (
+                ag_id,
+                name,
+                juris,
+                typ,
+                s_date,
+                s_prec,
+                e_date,
+                e_prec,
+            ) = row
+            start_disp = format_date_for_display(s_date, s_prec) if s_date else ""
+            end_disp = format_date_for_display(e_date, e_prec) if e_date else ""
+            self.tree.insert(
+                "",
+                "end",
+                values=(ag_id, name, juris, typ, start_disp, end_disp),
+            )
 
     def add_agency(self):
         win = open_edit_agency_form(parent=self.root)
@@ -167,7 +194,7 @@ class GovAgencyManager:
 
 def main():
     root = tk.Tk()
-    root.geometry("800x600")
+    root.geometry("900x600")
     app = GovAgencyManager(root)
     root.mainloop()
 

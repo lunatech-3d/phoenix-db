@@ -4,6 +4,11 @@ import sqlite3
 
 from app.config import DB_PATH
 from app.context_menu import create_context_menu, apply_context_menu_to_all_entries
+from app.date_utils import (
+    parse_date_input,
+    format_date_for_display,
+    add_date_format_menu,
+)
 from app.gov_linkage import open_gov_linkage_popup
 
 class EditGovAgencyForm:
@@ -52,6 +57,22 @@ class EditGovAgencyForm:
         self.parent_label.grid(row=row, column=1, sticky="w", padx=5, pady=5)
         ttk.Button(self.master, text="Lookup", command=self.lookup_parent).grid(row=row, column=2, padx=2)
         ttk.Button(self.master, text="Clear", command=lambda: self.set_parent(None)).grid(row=row, column=3, padx=2)
+        row += 1
+
+        ttk.Label(self.master, text="Start Date:").grid(row=row, column=0, sticky="e", padx=5, pady=5)
+        s_entry = ttk.Entry(self.master, width=15)
+        s_entry.grid(row=row, column=1, sticky="w", padx=5, pady=5)
+        self.entries["start_date"] = s_entry
+        create_context_menu(s_entry)
+        add_date_format_menu(s_entry)
+        row += 1
+
+        ttk.Label(self.master, text="End Date:").grid(row=row, column=0, sticky="e", padx=5, pady=5)
+        e_entry = ttk.Entry(self.master, width=15)
+        e_entry.grid(row=row, column=1, sticky="w", padx=5, pady=5)
+        self.entries["end_date"] = e_entry
+        create_context_menu(e_entry)
+        add_date_format_menu(e_entry)
         row += 1
 
         ttk.Label(self.master, text="Notes:").grid(row=row, column=0, sticky="ne", padx=5, pady=5)
@@ -117,7 +138,11 @@ class EditGovAgencyForm:
 
     def load_data(self):
         self.cursor.execute(
-            "SELECT name, parent_agency_id, jurisdiction, type, notes FROM GovAgency WHERE gov_agency_id=?",
+            """SELECT name, parent_agency_id, jurisdiction, type,
+                      start_date, start_date_precision,
+                      end_date, end_date_precision,
+                      notes
+               FROM GovAgency WHERE gov_agency_id=?""",
             (self.agency_id,),
         )
         row = self.cursor.fetchone()
@@ -125,10 +150,22 @@ class EditGovAgencyForm:
             messagebox.showerror("Error", "Agency record not found.", parent=self.master)
             self.master.destroy()
             return
-        name, parent_id, juris, typ, notes = row
+        (
+            name,
+            parent_id,
+            juris,
+            typ,
+            s_date,
+            s_prec,
+            e_date,
+            e_prec,
+            notes,
+        ) = row
         self.entries["name"].insert(0, name or "")
         self.entries["jurisdiction"].insert(0, juris or "")
         self.entries["type"].insert(0, typ or "")
+        self.entries["start_date"].insert(0, format_date_for_display(s_date, s_prec) if s_date else "")
+        self.entries["end_date"].insert(0, format_date_for_display(e_date, e_prec) if e_date else "")
         if notes:
             self.entries["notes"].insert("1.0", notes)
         self.set_parent(parent_id)
@@ -162,16 +199,52 @@ class EditGovAgencyForm:
         jurisdiction = self.entries["jurisdiction"].get().strip()
         typ = self.entries["type"].get().strip()
         notes = self.entries["notes"].get("1.0", tk.END).strip()
+        try:
+            s_raw = self.entries["start_date"].get().strip()
+            start_date, start_prec = parse_date_input(s_raw) if s_raw else (None, None)
+            e_raw = self.entries["end_date"].get().strip()
+            end_date, end_prec = parse_date_input(e_raw) if e_raw else (None, None)
+        except ValueError as e:
+            messagebox.showerror("Date Error", str(e), parent=self.master)
+            return
 
         if self.agency_id:
             self.cursor.execute(
-                """UPDATE GovAgency SET name=?, parent_agency_id=?, jurisdiction=?, type=?, notes=? WHERE gov_agency_id=?""",
-                (name, self.parent_id, jurisdiction, typ, notes, self.agency_id),
+                """UPDATE GovAgency SET name=?, parent_agency_id=?, jurisdiction=?, type=?,
+                       start_date=?, start_date_precision=?, end_date=?, end_date_precision=?,
+                       notes=? WHERE gov_agency_id=?""",
+                (
+                    name,
+                    self.parent_id,
+                    jurisdiction,
+                    typ,
+                    start_date,
+                    start_prec,
+                    end_date,
+                    end_prec,
+                    notes,
+                    self.agency_id,
+                ),
             )
         else:
             self.cursor.execute(
-                """INSERT INTO GovAgency (name, parent_agency_id, jurisdiction, type, notes) VALUES (?, ?, ?, ?, ?)""",
-                (name, self.parent_id, jurisdiction, typ, notes),
+                """INSERT INTO GovAgency (
+                        name, parent_agency_id, jurisdiction, type,
+                        start_date, start_date_precision,
+                        end_date, end_date_precision,
+                        notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    name,
+                    self.parent_id,
+                    jurisdiction,
+                    typ,
+                    start_date,
+                    start_prec,
+                    end_date,
+                    end_prec,
+                    notes,
+                ),
             )
             self.agency_id = self.cursor.lastrowid
             self.enable_related()
