@@ -21,8 +21,7 @@ class EditGovAgencyForm:
             self.load_data()
             self.load_children()
         else:
-            self.child_tree.configure(state="disabled")
-            self.delete_btn.configure(state="disabled")
+            self.disable_related()
 
     def setup_form(self):
         self.master.title("Edit Government Agency")
@@ -85,6 +84,20 @@ class EditGovAgencyForm:
 
         apply_context_menu_to_all_entries(self.master)
         self.master.columnconfigure(1, weight=1)
+
+    def disable_related(self):
+        for widget in (self.child_tree, self.delete_btn):
+            try:
+                widget.state(["disabled"])
+            except tk.TclError:
+                widget.configure(state="disabled")
+
+    def enable_related(self):
+        for widget in (self.child_tree, self.delete_btn):
+            try:
+                widget.state(["!disabled"])
+            except tk.TclError:
+                widget.configure(state="normal")
 
     def lookup_parent(self):
         def set_parent_id(pid):
@@ -161,11 +174,10 @@ class EditGovAgencyForm:
                 (name, self.parent_id, jurisdiction, typ, notes),
             )
             self.agency_id = self.cursor.lastrowid
-            self.child_tree.configure(state="normal")
-            self.delete_btn.configure(state="normal")
+            self.enable_related()
         self.conn.commit()
         messagebox.showinfo("Saved", "Agency record saved.", parent=self.master)
-        self.load_children()
+        self.master.destroy()
 
     def delete_record(self):
         if not self.agency_id:
