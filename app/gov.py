@@ -191,7 +191,6 @@ class GovAgencyManager:
             self.conn.commit()
             self.load_agencies()
 
-
 def main():
     root = tk.Tk()
     root.geometry("900x600")

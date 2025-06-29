@@ -87,6 +87,10 @@ def open_gov_linkage_popup(
         for row in cur.fetchall():
             tree.insert("", "end", values=row)
 
+    ttk.Button(search_frame, text="Search", command=refresh_tree).grid(
+        row=0, column=6, padx=5
+    )
+
     # ------- treeview -------
     columns = ("id", "name", "jurisdiction", "type")
     tree = ttk.Treeview(popup, columns=columns, show="headings", selectmode="browse")
@@ -107,7 +111,16 @@ def open_gov_linkage_popup(
         vals = tree.item(sel[0])["values"]
         selected = (int(vals[0]), str(vals[1]))
         if callback:
-            callback(*selected)
+            try:
+                from inspect import signature
+
+                param_count = len(signature(callback).parameters)
+                if param_count == 1:
+                    callback(selected[0])
+                else:
+                    callback(*selected)
+            except Exception:
+                callback(*selected)
         popup.destroy()
 
     tree.bind("<Double-1>", lambda _e: choose_and_close())
@@ -115,7 +128,6 @@ def open_gov_linkage_popup(
     # ------- buttons -------
     btn_frame = ttk.Frame(popup)
     btn_frame.pack(pady=5)
-    ttk.Button(btn_frame, text="Search", command=refresh_tree).pack(side="left", padx=5)
     ttk.Button(btn_frame, text="Select", command=choose_and_close).pack(side="left", padx=5)
     ttk.Button(btn_frame, text="Cancel", command=popup.destroy).pack(side="left", padx=5)
 
@@ -126,7 +138,6 @@ def open_gov_linkage_popup(
     popup.wait_window(popup)
 
     return selected
-
 
 if __name__ == "__main__":
     # Example usage when run directly

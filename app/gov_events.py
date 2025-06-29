@@ -336,3 +336,4 @@ if __name__ == "__main__":
     parser.add_argument("agency_id", type=int, help="GovAgency ID")
     args = parser.parse_args()
     open_event_manager(args.agency_id)
+    

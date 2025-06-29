@@ -121,7 +121,7 @@ class EditGovAgencyForm:
                 widget.configure(state="normal")
 
     def lookup_parent(self):
-        def set_parent_id(pid):
+        def set_parent_id(pid, _name=None):
             self.set_parent(pid)
         open_gov_linkage_popup(set_parent_id)
 
