@@ -2274,14 +2274,19 @@ screen_height = window.winfo_screenheight()
 x = (screen_width - window_width) // 2
 y = (screen_height - window_height) // 2
 window.geometry(f"{window_width}x{window_height}+{x}+{y}")
-window.bind
+
+# Allow dynamic resizing of the main interface
+window.grid_rowconfigure(0, weight=1)
+window.grid_columnconfigure(1, weight=1)
 # Create a frame for the photo
 frame_photo = ttk.Frame(window)
 frame_photo.grid(row=0, column=0, rowspan=3, padx=10, pady=10, sticky="nsew")
 
 # Create a frame for the form fields
 frame_form = ttk.Frame(window)
-frame_form.grid(row=0, column=1, rowspan=3)
+frame_form.grid(row=0, column=1, rowspan=3, sticky="nsew")
+frame_form.grid_rowconfigure(0, weight=1)
+frame_form.grid_columnconfigure(0, weight=1)
 
 # Create the notebook (tabbed interface)
 notebook = ttk.Notebook(frame_form)

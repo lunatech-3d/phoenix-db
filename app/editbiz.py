@@ -775,14 +775,28 @@ class EditBusinessForm:
                 messagebox.showerror("Date Error", f"Could not parse start date: {raw_start_date}")
                 return
 
-            self.cursor.execute("""
-                DELETE FROM BizLocHistory 
-                WHERE biz_id = ? 
-                  AND start_date = ? 
-                  AND address_id = (
-                      SELECT address_id FROM Address WHERE address = ? LIMIT 1
-                  )
-            """, (self.biz_id, parsed_start_date, address))
+            if parsed_start_date:
+                query = """
+                    DELETE FROM BizLocHistory
+                    WHERE biz_id = ?
+                      AND start_date = ?
+                      AND address_id = (
+                          SELECT address_id FROM Address WHERE address = ? LIMIT 1
+                      )
+                """
+                params = (self.biz_id, parsed_start_date, address)
+            else:
+                query = """
+                    DELETE FROM BizLocHistory
+                    WHERE biz_id = ?
+                      AND start_date IS NULL
+                      AND address_id = (
+                          SELECT address_id FROM Address WHERE address = ? LIMIT 1
+                      )
+                """
+                params = (self.biz_id, address)
+
+            self.cursor.execute(query, params)
             self.conn.commit()
             self.load_locations()
 

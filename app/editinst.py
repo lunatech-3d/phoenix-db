@@ -445,9 +445,12 @@ class EditInstitutionForm:
         self.staff_tree.bind("<Double-1>", self.on_staff_double)
         btns = ttk.Frame(self.staff_frame)
         btns.pack(fill="x")
-        ttk.Button(btns, text="Add", command=self.add_staff).pack(side="left", padx=5)
-        ttk.Button(btns, text="Edit", command=self.edit_staff).pack(side="left", padx=5)
-        ttk.Button(btns, text="Delete", command=self.delete_staff).pack(side="left", padx=5)
+        self.staff_add_btn = ttk.Button(btns, text="Add", command=self.add_staff)
+        self.staff_add_btn.pack(side="left", padx=5)
+        self.staff_edit_btn = ttk.Button(btns, text="Edit", command=self.edit_staff)
+        self.staff_edit_btn.pack(side="left", padx=5)
+        self.staff_del_btn = ttk.Button(btns, text="Delete", command=self.delete_staff)
+        self.staff_del_btn.pack(side="left", padx=5)
 
         # --- Locations Section ---
         self.location_frame = ttk.LabelFrame(self.master, text="Locations")
@@ -499,9 +502,12 @@ class EditInstitutionForm:
         self.member_tree.bind("<Double-1>", self.on_member_double)
         mb = ttk.Frame(self.member_frame)
         mb.pack(fill="x")
-        ttk.Button(mb, text="Add", command=self.add_member).pack(side="left", padx=5)
-        ttk.Button(mb, text="Edit", command=self.edit_member).pack(side="left", padx=5)
-        ttk.Button(mb, text="Delete", command=self.delete_member).pack(side="left", padx=5)
+        self.member_add_btn = ttk.Button(mb, text="Add", command=self.add_member)
+        self.member_add_btn.pack(side="left", padx=5)
+        self.member_edit_btn = ttk.Button(mb, text="Edit", command=self.edit_member)
+        self.member_edit_btn.pack(side="left", padx=5)
+        self.member_del_btn = ttk.Button(mb, text="Delete", command=self.delete_member)
+        self.member_del_btn.pack(side="left", padx=5)
 
         self.event_frame = ttk.LabelFrame(self.master, text="Events")
         self.event_frame.pack(fill="both", expand=False, padx=10, pady=5)
@@ -526,17 +532,20 @@ class EditInstitutionForm:
         self.event_tree.bind("<Double-1>", self.on_event_double)
         eb = ttk.Frame(self.event_frame)
         eb.pack(fill="x")
-        ttk.Button(eb, text="Add", command=self.add_event).pack(side="left", padx=5)
-        ttk.Button(eb, text="Edit", command=self.edit_event).pack(side="left", padx=5)
-        ttk.Button(eb, text="Delete", command=self.delete_event).pack(side="left", padx=5)
+        self.event_add_btn = ttk.Button(eb, text="Add", command=self.add_event)
+        self.event_add_btn.pack(side="left", padx=5)
+        self.event_edit_btn = ttk.Button(eb, text="Edit", command=self.edit_event)
+        self.event_edit_btn.pack(side="left", padx=5)
+        self.event_del_btn = ttk.Button(eb, text="Delete", command=self.delete_event)
+        self.event_del_btn.pack(side="left", padx=5)
         apply_context_menu_to_all_entries(self.master)
 
     def disable_related(self):
         widgets = (
-            [self.staff_tree] + list(self.staff_frame.children.values()) +
+            [self.staff_tree, self.staff_add_btn, self.staff_edit_btn, self.staff_del_btn] +
             [self.location_tree, self.location_add_btn, self.location_edit_btn, self.location_del_btn] +
-            [self.member_tree] + list(self.member_frame.children.values()) +
-            [self.event_tree] + list(self.event_frame.children.values())
+            [self.member_tree, self.member_add_btn, self.member_edit_btn, self.member_del_btn] +
+            [self.event_tree, self.event_add_btn, self.event_edit_btn, self.event_del_btn]
         )
         for w in widgets:
             try:
@@ -546,10 +555,10 @@ class EditInstitutionForm:
 
     def enable_related(self):
         widgets = (
-            [self.staff_tree] + list(self.staff_frame.children.values()) +
+            [self.staff_tree, self.staff_add_btn, self.staff_edit_btn, self.staff_del_btn] +
             [self.location_tree, self.location_add_btn, self.location_edit_btn, self.location_del_btn] +
-            [self.member_tree] + list(self.member_frame.children.values()) +
-            [self.event_tree] + list(self.event_frame.children.values())
+            [self.member_tree, self.member_add_btn, self.member_edit_btn, self.member_del_btn] +
+            [self.event_tree, self.event_add_btn, self.event_edit_btn, self.event_del_btn]
         )
         for w in widgets:
             try:
@@ -872,15 +881,24 @@ class EditInstitutionForm:
                 messagebox.showerror("Date Error", f"Could not parse start date: {raw_start_date}")
                 return
 
-            self.cursor.execute(
-                """DELETE FROM InstLocHistory
-                        WHERE inst_id = ?
-                          AND start_date = ?
-                          AND address_id = (
-                              SELECT address_id FROM Address WHERE address = ? LIMIT 1
-                          )""",
-                (self.inst_id, parsed_start_date, address),
-            )
+            if parsed_start_date:
+                query = """DELETE FROM InstLocHistory
+                            WHERE inst_id = ?
+                              AND start_date = ?
+                              AND address_id = (
+                                  SELECT address_id FROM Address WHERE address = ? LIMIT 1
+                              )"""
+                params = (self.inst_id, parsed_start_date, address)
+            else:
+                query = """DELETE FROM InstLocHistory
+                            WHERE inst_id = ?
+                              AND start_date IS NULL
+                              AND address_id = (
+                                  SELECT address_id FROM Address WHERE address = ? LIMIT 1
+                              )"""
+                params = (self.inst_id, address)
+
+            self.cursor.execute(query, params)
             self.conn.commit()
             self.load_locations()
 
@@ -1095,7 +1113,7 @@ class EditInstitutionForm:
 
 def open_edit_institution_form(inst_id=None):
     win = tk.Tk() if inst_id is None else tk.Toplevel()
-    win.geometry("1200x800")
+    win.geometry("1200x900")
     EditInstitutionForm(win, inst_id)
     win.grab_set()
 
@@ -1104,5 +1122,5 @@ if __name__ == "__main__":
     arg = int(sys.argv[1]) if len(sys.argv) > 1 else None
     root = tk.Tk()
     EditInstitutionForm(root, arg)
-    root.geometry("1200x800")
+    root.geometry("1200x900")
     root.mainloop()
