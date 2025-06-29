@@ -16,9 +16,7 @@ This folder contains SQL definitions for building the institution subsystem of t
 
 ## Usage
 
-Feed these scripts to Codex or your database migration engine in order:
-1. Start with Phase 1
-2. Validate structure and foreign keys
-3. Proceed with Phase 2 and beyond
+Run `create_inst_tables.sql` through your database engine to create the core tables.
+Afterward validate structure and foreign keys. Additional scripts may be added in later phases.
 
 Refer to `/docs/schema.md` for a full schema reference.

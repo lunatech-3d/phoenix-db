@@ -41,3 +41,19 @@ To document the historical record of Plymouth’s government up to approximately
 
 - Dates include precision (`YEAR`, `MONTH`, `EXACT`, `ABOUT`, etc.).
 - `original_text` preserves source verbatim.
+
+## Updating Existing Databases
+
+Earlier versions of `phoenix.db` did not include the four date fields on the
+`GovAgency` table. If you built the database before this update, add the columns
+with the following SQL:
+
+```sql
+ALTER TABLE GovAgency ADD COLUMN start_date TEXT;
+ALTER TABLE GovAgency ADD COLUMN start_date_precision TEXT;
+ALTER TABLE GovAgency ADD COLUMN end_date TEXT;
+ALTER TABLE GovAgency ADD COLUMN end_date_precision TEXT;
+```
+
+Running `docs/gov/create_gov_tables.sql` on a new database will create the table
+with these fields already defined.

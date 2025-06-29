@@ -6,7 +6,11 @@ CREATE TABLE IF NOT EXISTS GovAgency (
     parent_agency_id  INTEGER REFERENCES GovAgency(gov_agency_id),
     jurisdiction      TEXT,
     type              TEXT,
-    notes             TEXT
+    notes             TEXT,
+    start_date        TEXT,
+    start_date_precision TEXT,
+    end_date          TEXT,
+    end_date_precision TEXT
 );
 
 CREATE TABLE IF NOT EXISTS GovPosition (

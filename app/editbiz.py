@@ -574,9 +574,9 @@ class EditBusinessForm:
 
         self._owner_sort_state[col] = not reverse
 
-    #
-    #Support Functions for #2 - Location Tree
-    #
+    # Support Functions for #2 - Location Tree
+    # Biz location records are stored in the BizLocHistory table.
+    # No standalone BizLocation table is used.
 
     def load_locations(self):
         self.location_tree.delete(*self.location_tree.get_children())

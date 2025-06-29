@@ -166,7 +166,7 @@ class PersonnelForm:
                 """UPDATE GovPersonnel
                    SET person_id=?, position_id=?, start_date=?, start_precision=?,
                        end_date=?, end_precision=?, notes=?, original_text=?, source_id=?
-                 WHERE gov_personnel_id=?""",
+                 WHERE gov_personnel_id=?"""
                 (
                     self.person_id,
                     self.position_id,

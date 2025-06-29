@@ -5,6 +5,7 @@ from datetime import datetime
 import tkinter as tk
 from tkinter import ttk, messagebox
 import webbrowser
+import urllib.parse
 
 from app.config import DB_PATH
 from app.date_utils import parse_date_input, format_date_for_display, date_sort_key
@@ -392,6 +393,7 @@ class EditInstitutionForm:
         if inst_id:
             self.load_data()
             self.load_staff()
+            self.load_locations()
             self.load_members()
             self.load_events()
         else:
@@ -447,6 +449,38 @@ class EditInstitutionForm:
         ttk.Button(btns, text="Edit", command=self.edit_staff).pack(side="left", padx=5)
         ttk.Button(btns, text="Delete", command=self.delete_staff).pack(side="left", padx=5)
 
+        # --- Locations Section ---
+        self.location_frame = ttk.LabelFrame(self.master, text="Locations")
+        self.location_frame.pack(fill="both", expand=False, padx=10, pady=5)
+        self.location_tree = ttk.Treeview(
+            self.location_frame,
+            columns=("address", "start", "end", "notes", "url"),
+            show="headings",
+            height=2,
+        )
+        for col in self.location_tree["columns"]:
+            self.location_tree.heading(col, text=col, command=lambda c=col: self.sort_location_tree_by_column(c))
+            if col in ("start", "end"):
+                self.location_tree.column(col, width=90)
+            elif col == "address":
+                self.location_tree.column(col, width=220)
+            elif col == "url":
+                self.location_tree.column(col, width=200)
+            else:
+                self.location_tree.column(col, width=180)
+        self.location_tree.pack(side="top", fill="x", expand=False, padx=5)
+        self.location_tree.bind("<Double-1>", self.on_location_double_click)
+
+        loc_btns = ttk.Frame(self.location_frame)
+        loc_btns.pack(side="bottom", fill="x")
+        self.location_add_btn = ttk.Button(loc_btns, text="Add", command=self.add_location)
+        self.location_add_btn.pack(side="left", padx=5)
+        self.location_edit_btn = ttk.Button(loc_btns, text="Edit", command=self.edit_location)
+        self.location_edit_btn.pack(side="left", padx=5)
+        self.location_del_btn = ttk.Button(loc_btns, text="Delete", command=self.delete_location)
+        self.location_del_btn.pack(side="left", padx=5)
+
+
         self.member_frame = ttk.LabelFrame(self.master, text="Members")
         self.member_frame.pack(fill="both", expand=False, padx=10, pady=5)
         self.member_tree = ttk.Treeview(
@@ -500,6 +534,7 @@ class EditInstitutionForm:
     def disable_related(self):
         widgets = (
             [self.staff_tree] + list(self.staff_frame.children.values()) +
+            [self.location_tree, self.location_add_btn, self.location_edit_btn, self.location_del_btn] +
             [self.member_tree] + list(self.member_frame.children.values()) +
             [self.event_tree] + list(self.event_frame.children.values())
         )
@@ -512,6 +547,7 @@ class EditInstitutionForm:
     def enable_related(self):
         widgets = (
             [self.staff_tree] + list(self.staff_frame.children.values()) +
+            [self.location_tree, self.location_add_btn, self.location_edit_btn, self.location_del_btn] +
             [self.member_tree] + list(self.member_frame.children.values()) +
             [self.event_tree] + list(self.event_frame.children.values())
         )
@@ -649,6 +685,250 @@ class EditInstitutionForm:
         for idx, (_, k) in enumerate(items):
             self.staff_tree.move(k, "", idx)
         self._staff_sort[col] = not reverse
+
+    # --- Location Section ---
+    def load_locations(self):
+        self.location_tree.delete(*self.location_tree.get_children())
+        self.cursor.execute(
+            """SELECT a.address, l.start_date, l.start_date_precision,
+                       l.end_date, l.end_date_precision, l.notes, l.url
+                   FROM InstLocHistory l
+                   JOIN Address a ON l.address_id = a.address_id
+                   WHERE l.inst_id = ?""",
+            (self.inst_id,),
+        )
+        rows = self.cursor.fetchall()
+        sorted_rows = sorted(rows, key=lambda r: date_sort_key(r[1]))
+        for row in sorted_rows:
+            address, start, sprec, end, eprec, notes, url = row
+            start_disp = format_date_for_display(start, sprec) if start else ""
+            end_disp = format_date_for_display(end, eprec) if end else ""
+            self.location_tree.insert("", "end", values=(address, start_disp, end_disp, notes, url))
+
+    def add_location(self):
+        self.open_location_editor()
+
+    def edit_location(self):
+        sel = self.location_tree.selection()
+        if not sel:
+            return
+        values = self.location_tree.item(sel[0])["values"]
+        self.open_location_editor(existing=values)
+
+    def open_location_editor(self, existing=None):
+        self.location_win = tk.Toplevel(self.master)
+        self.location_win.title("Edit Location" if existing else "Add Location")
+
+        fields = ["Address", "Start Date", "End Date", "Notes", "URL"]
+        self.location_entries = {}
+        self.location_existing = existing
+
+        for idx, label in enumerate(fields):
+            ttk.Label(self.location_win, text=label + ":").grid(row=idx, column=0, padx=5, pady=3, sticky="e")
+
+            if label == "Address":
+                address_frame = ttk.Frame(self.location_win)
+                address_frame.grid(row=idx, column=1, padx=5, pady=3, sticky="w")
+
+                search_var = tk.StringVar(master=self.location_win)
+                search_entry = ttk.Entry(address_frame, textvariable=search_var, width=30)
+                search_entry.pack(side="left", padx=(0, 5))
+
+                self.cursor.execute("SELECT address_id, address FROM Address ORDER BY address")
+                address_rows = self.cursor.fetchall()
+                address_list = [row[1] for row in address_rows]
+                self.address_lookup = {row[1]: row[0] for row in address_rows}
+
+                address_combo = ttk.Combobox(address_frame, width=40, state="readonly")
+                address_combo['values'] = address_list
+                address_combo.pack(side="left")
+                self.location_entries["Address"] = address_combo
+
+                def filter_addresses():
+                    term = search_var.get().lower()
+                    filtered = [a for a in address_list if term in a.lower()]
+                    address_combo['values'] = filtered
+
+                ttk.Button(address_frame, text="Search", command=filter_addresses).pack(side="left", padx=(5, 0))
+
+            else:
+                entry = ttk.Entry(self.location_win, width=50)
+                entry.grid(row=idx, column=1, padx=5, pady=3)
+                self.location_entries[label] = entry
+
+        if existing:
+            for key, value in zip(fields, existing):
+                widget = self.location_entries.get(key)
+                if not widget:
+                    continue
+                if isinstance(widget, ttk.Combobox):
+                    widget.set(value)
+                else:
+                    widget.delete(0, tk.END)
+                    widget.insert(0, value)
+
+        def save_location():
+            address_widget = self.location_entries.get("Address")
+            if not address_widget:
+                messagebox.showerror("Error", "Address field is missing.")
+                return
+
+            address = address_widget.get().strip()
+            if address not in address_widget['values']:
+                messagebox.showerror("Invalid Address", "The address you selected is not in the database.")
+                return
+
+            address_id = self.address_lookup.get(address)
+            if not address_id:
+                messagebox.showerror("Invalid Address", "The address is not recognized.")
+                return
+
+            try:
+                start_input = self.location_entries["Start Date"].get().strip()
+                start_date, start_prec = parse_date_input(start_input) if start_input else (None, None)
+
+                end_input = self.location_entries["End Date"].get().strip()
+                end_date, end_prec = parse_date_input(end_input) if end_input else (None, None)
+            except ValueError as e:
+                messagebox.showerror("Date Error", str(e))
+                return
+
+            notes = self.location_entries["Notes"].get().strip()
+            url = self.location_entries["URL"].get().strip()
+
+            try:
+                if self.location_existing:
+                    original_address = self.location_existing[0]
+                    self.cursor.execute(
+                        "SELECT address_id FROM Address WHERE address = ? LIMIT 1",
+                        (original_address,),
+                    )
+                    result = self.cursor.fetchone()
+                    if not result:
+                        messagebox.showerror("Error", "Original address not found.")
+                        return
+                    original_address_id = result[0]
+                    original_display_start = self.location_existing[1]
+                    original_start_date, _ = parse_date_input(original_display_start)
+
+                    self.cursor.execute(
+                        """UPDATE InstLocHistory
+                           SET address_id = ?,
+                               start_date = ?, start_date_precision = ?,
+                               end_date = ?, end_date_precision = ?,
+                               notes = ?, url = ?
+                         WHERE inst_id = ? AND address_id = ?""",
+                        (
+                            address_id,
+                            start_date, start_prec,
+                            end_date, end_prec,
+                            notes, url,
+                            self.inst_id,
+                            original_address_id,
+                        ),
+                    )
+                else:
+                    self.cursor.execute(
+                        """INSERT INTO InstLocHistory (
+                                inst_id, address_id,
+                                start_date, start_date_precision,
+                                end_date, end_date_precision,
+                                notes, url
+                           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                        (
+                            self.inst_id, address_id,
+                            start_date, start_prec,
+                            end_date, end_prec,
+                            notes, url,
+                        ),
+                    )
+
+                self.conn.commit()
+                self.load_locations()
+                self.location_win.destroy()
+
+            except sqlite3.IntegrityError:
+                messagebox.showerror("Error", "This location record already exists.")
+
+        btn_frame = ttk.Frame(self.location_win)
+        btn_frame.grid(row=len(fields), column=0, columnspan=2, pady=10)
+        ttk.Button(btn_frame, text="Save", command=save_location).pack(side="left", padx=10)
+        ttk.Button(btn_frame, text="Cancel", command=self.location_win.destroy).pack(side="left", padx=10)
+
+    def delete_location(self):
+        selected = self.location_tree.selection()
+        if not selected:
+            return
+
+        confirm = messagebox.askyesno("Delete", "Delete selected location record?")
+        if confirm:
+            values = self.location_tree.item(selected[0])["values"]
+            address = values[0]
+            raw_start_date = values[1]
+
+            try:
+                parsed_start_date, _ = parse_date_input(raw_start_date)
+            except ValueError:
+                messagebox.showerror("Date Error", f"Could not parse start date: {raw_start_date}")
+                return
+
+            self.cursor.execute(
+                """DELETE FROM InstLocHistory
+                        WHERE inst_id = ?
+                          AND start_date = ?
+                          AND address_id = (
+                              SELECT address_id FROM Address WHERE address = ? LIMIT 1
+                          )""",
+                (self.inst_id, parsed_start_date, address),
+            )
+            self.conn.commit()
+            self.load_locations()
+
+    def sort_location_tree_by_column(self, col):
+        if not hasattr(self, "_location_sort_state"):
+            self._location_sort_state = {}
+
+        reverse = self._location_sort_state.get(col, False)
+        items = [(self.location_tree.set(k, col), k) for k in self.location_tree.get_children('')]
+
+        if col.lower() in ("start", "end", "start date", "end date"):
+            items.sort(key=lambda item: date_sort_key(item[0]), reverse=reverse)
+        else:
+            items.sort(key=lambda item: item[0].lower() if isinstance(item[0], str) else item[0], reverse=reverse)
+
+        for index, (_, k) in enumerate(items):
+            self.location_tree.move(k, '', index)
+
+        self._location_sort_state[col] = not reverse
+
+    def on_location_double_click(self, event):
+        region = self.location_tree.identify("region", event.x, event.y)
+        column = self.location_tree.identify_column(event.x)
+
+        if region != "cell":
+            return
+
+        selected = self.location_tree.selection()
+        if not selected:
+            return
+
+        values = self.location_tree.item(selected[0])["values"]
+        address = values[0]
+        url = values[4]
+
+        if column == "#1":
+            if address:
+                query = urllib.parse.quote(address)
+                map_url = f"https://www.google.com/maps/search/?api=1&query={query}"
+                webbrowser.open(map_url, new=2)
+            else:
+                messagebox.showinfo("No Address", "No address provided.")
+        elif column == "#5":
+            if url and url.startswith("http"):
+                webbrowser.open(url, new=2)
+            else:
+                messagebox.showinfo("No URL", "No valid link provided.")
+
 
     # --- Member Section ---
     def load_members(self):

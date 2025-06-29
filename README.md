@@ -56,9 +56,6 @@ These tables are fully documented in the schema file:
 
 Codex can assist with this subsystem using:
 
-- SQL files in [`sql/`](sql/)
-  - `phase1_institution.sql` – Core identity and location
-  - `phase2_institution.sql` – Affiliations and role tracking
-- Guidance in [`sql/README.md`](sql/README.md)
+- SQL script [`docs/institution/create_inst_tables.sql`](docs/institution/create_inst_tables.sql) – core Institution tables
 
 All SQL scripts follow the `Inst_*` naming convention and standard Phoenix date handling (`*_start_date`, `*_end_date`, with `*_date_precision` when needed)

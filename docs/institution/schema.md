@@ -95,6 +95,19 @@ Fields:
 - `original_text`
 
 
+## 🧩 Table: `InstLocHistory`
+> Tracks the address history of an institution over time.
+
+| Column Name | Data Type | Not Null | Primary Key | Default Value |
+|-------------|-----------|----------|-------------|----------------|
+| `inst_id` | INTEGER | No | Yes | |
+| `address_id` | INTEGER | No | Yes | |
+| `start_date` | DATE | No | Yes | |
+| `start_date_precision` | TEXT | No | No | |
+| `end_date` | DATE | No | No | |
+| `end_date_precision` | TEXT | No | No | |
+| `notes` | TEXT | No | No | |
+| `url` | TEXT | No | No | |
 
 ## Usage Notes
 

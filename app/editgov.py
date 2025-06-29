@@ -10,6 +10,7 @@ from app.date_utils import (
     add_date_format_menu,
 )
 from app.gov_linkage import open_gov_linkage_popup
+from app.gov_position import open_position_manager
 
 class EditGovAgencyForm:
     def __init__(self, master, agency_id=None):
@@ -101,20 +102,22 @@ class EditGovAgencyForm:
         ttk.Button(btn_frame, text="Save", command=self.save).pack(side="left", padx=5)
         self.delete_btn = ttk.Button(btn_frame, text="Delete", command=self.delete_record)
         self.delete_btn.pack(side="left", padx=5)
+        self.positions_btn = ttk.Button(btn_frame, text="Positions", command=self.open_positions)
+        self.positions_btn.pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Close", command=self.master.destroy).pack(side="left", padx=5)
 
         apply_context_menu_to_all_entries(self.master)
         self.master.columnconfigure(1, weight=1)
 
     def disable_related(self):
-        for widget in (self.child_tree, self.delete_btn):
+        for widget in (self.child_tree, self.delete_btn, self.positions_btn):
             try:
                 widget.state(["disabled"])
             except tk.TclError:
                 widget.configure(state="disabled")
 
     def enable_related(self):
-        for widget in (self.child_tree, self.delete_btn):
+        for widget in (self.child_tree, self.delete_btn, self.positions_btn):
             try:
                 widget.state(["!disabled"])
             except tk.TclError:
@@ -181,6 +184,13 @@ class EditGovAgencyForm:
         for row in self.cursor.fetchall():
             self.child_tree.insert("", "end", values=row)
 
+    def open_positions(self):
+        if not self.agency_id:
+            return
+        win = open_position_manager(self.agency_id, parent=self.master)
+        if win:
+            self.master.wait_window(win)
+    
     def open_child_agency(self, event=None):
         sel = self.child_tree.selection()
         if not sel:
@@ -217,7 +227,7 @@ class EditGovAgencyForm:
                     name,
                     self.parent_id,
                     jurisdiction,
-                    typ,
+                    type,
                     start_date,
                     start_prec,
                     end_date,
@@ -238,7 +248,7 @@ class EditGovAgencyForm:
                     name,
                     self.parent_id,
                     jurisdiction,
-                    typ,
+                    type,
                     start_date,
                     start_prec,
                     end_date,

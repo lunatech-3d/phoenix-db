@@ -123,6 +123,10 @@
 | `notes` | TEXT | No | No |  |
 | `url` | TEXT | No | No |  |
 
+> **Note**: `BizLocHistory` stores all business location records. Each entry
+> represents the address of a business for a specific time period, so a
+> separate `BizLocation` table is not needed.
+
 ## 🧩 Table: `BizOwnership`
 > Associates people with businesses they owned. Captures ownership role, title, duration, and notes.
 
@@ -986,3 +990,18 @@ records via the parent_township_id field.
 | `link_url` | TEXT | No | No | |
 | `created_at` | TIMESTAMP | No | No | CURRENT_TIMESTAMP |
 | `original_text` | TEXT | No | No | |
+
+
+## 🧩 Table: `InstLocHistory`
+> Tracks the address history of an institution over time.
+
+| Column Name | Data Type | Not Null | Primary Key | Default Value |
+|-------------|-----------|----------|-------------|----------------|
+| `inst_id` | INTEGER | No | Yes | |
+| `address_id` | INTEGER | No | Yes | |
+| `start_date` | DATE | No | Yes | |
+| `start_date_precision` | TEXT | No | No | |
+| `end_date` | DATE | No | No | |
+| `end_date_precision` | TEXT | No | No | |
+| `notes` | TEXT | No | No | |
+| `url` | TEXT | No | No | |

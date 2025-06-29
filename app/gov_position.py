@@ -4,7 +4,7 @@ import sqlite3
 
 from app.config import DB_PATH
 from app.context_menu import create_context_menu, apply_context_menu_to_all_entries
-
+from app.gov_personnel import open_personnel_manager
 
 class PositionForm:
     """Form for adding or editing a position within a government agency."""
@@ -164,6 +164,7 @@ class PositionManager:
         ttk.Button(btn_frame, text="Add", command=self.add_position).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Edit", command=self.edit_position).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Delete", command=self.delete_position).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text="Personnel", command=self.open_personnel).pack(side="left", padx=5)
 
     def sort_by_column(self, col):
         items = [(self.tree.set(k, col), k) for k in self.tree.get_children("")]
@@ -227,6 +228,13 @@ class PositionManager:
             self.conn.commit()
             self.load_positions()
 
+    def open_personnel(self):
+        pid = self.get_selected_id()
+        if not pid:
+            return
+        win = open_personnel_manager(pid, parent=self.master)
+        if win:
+            self.master.wait_window(win)
 
 def open_position_manager(agency_id, parent=None):
     if parent is None:

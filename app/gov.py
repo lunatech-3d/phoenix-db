@@ -6,6 +6,7 @@ from app.config import DB_PATH
 from app.context_menu import create_context_menu
 from app.date_utils import format_date_for_display, date_sort_key
 from app.editgov import open_edit_agency_form
+from app.gov_position import open_position_manager
 
 
 class GovAgencyManager:
@@ -76,7 +77,7 @@ class GovAgencyManager:
         self.tree.column("end", width=80, anchor="w")
 
         self.tree.pack(fill="both", expand=True, padx=10, pady=10)
-        self.tree.bind("<Double-1>", self.edit_agency)
+        self.tree.bind("<Double-1>", self.open_positions)
 
     def setup_buttons(self):
         btn_frame = ttk.Frame(self.root)
@@ -85,6 +86,7 @@ class GovAgencyManager:
         ttk.Button(btn_frame, text="Add", command=self.add_agency).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Edit", command=self.edit_agency).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Delete", command=self.delete_agency).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text="Positions", command=self.open_positions).pack(side="left", padx=5)
 
     def sort_by_column(self, col):
         items = [(self.tree.set(k, col), k) for k in self.tree.get_children("")]
@@ -168,6 +170,14 @@ class GovAgencyManager:
         if win:
             self.root.wait_window(win)
         self.load_agencies()
+
+    def open_positions(self, event=None):
+        agency_id = self.get_selected_id()
+        if not agency_id:
+            return
+        win = open_position_manager(agency_id, parent=self.root)
+        if win:
+            self.root.wait_window(win)
 
     def delete_agency(self):
         agency_id = self.get_selected_id()
