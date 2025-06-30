@@ -12,6 +12,7 @@ from PIL import ImageTk, Image
 #Local Imports
 from app.config import DB_PATH, PATHS
 from app.person_search import search_people
+from app.user_prefs import open_options_dialog
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -258,6 +259,9 @@ def add_census_rec():
 def open_findagrave_matching():
     subprocess.run([sys.executable, PATHS.matchgraverecords])
 
+def open_options():
+    open_options_dialog(window)
+
 def open_edit_form(event):
     selected_item = tree.focus()
     # Get the column order of the clicked column
@@ -486,7 +490,7 @@ groups_menu.add_command(label="Org Members Table", command=view_members)
 tools_menu = tk.Menu(menu, tearoff=False)
 menu.add_cascade(label="Tools", menu=tools_menu)
 tools_menu.add_command(label="FindAGrave Matching", command=open_findagrave_matching)
-
+tools_menu.add_command(label="Options...", command=open_options)
 
 # Create a frame for the title
 frame_title = ttk.Frame(window)

@@ -167,14 +167,32 @@ class InstitutionManager:
         if not inst_id:
             return
 
-        related_tables = ["Inst_Event", "Inst_Group", "Inst_GroupMember", "Inst_Staff"]
-        for table in related_tables:
-            self.cursor.execute(f"SELECT COUNT(*) FROM {table} WHERE inst_id = ?", (inst_id,))
+        queries = [
+            ("Inst_Event", "SELECT COUNT(*) FROM Inst_Event WHERE inst_id = ?"),
+            ("Inst_Group", "SELECT COUNT(*) FROM Inst_Group WHERE inst_id = ?"),
+            (
+                "Inst_GroupMember",
+                """
+                SELECT COUNT(*)
+                FROM Inst_GroupMember gm
+                JOIN Inst_Group g ON gm.inst_group_id = g.inst_group_id
+                WHERE g.inst_id = ?
+                """,
+            ),
+            ("Inst_Staff", "SELECT COUNT(*) FROM Inst_Staff WHERE inst_id = ?"),
+            ("InstLocHistory", "SELECT COUNT(*) FROM InstLocHistory WHERE inst_id = ?"),
+        ]
+
+        for table, query in queries:
+            self.cursor.execute(query, (inst_id,))
+
+        for table, query in queries:
+            self.cursor.execute(query, (inst_id,))
             count = self.cursor.fetchone()[0]
             if count:
                 messagebox.showwarning(
                     "Cannot Delete",
-                    f"Related records found in {table} ({count}). Remove them first.",
+                    f"Supporting records were found for this Institution. You must remove them first.",
                 )
                 return
 

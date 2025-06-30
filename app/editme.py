@@ -28,8 +28,9 @@ from app.person_linkage import open_person_linkage_popup
 from app.bio_editor import create_embedded_bio_editor
 from app.obituary_editor import create_embedded_obituary_editor
 from app.life_events_editor import create_embedded_life_events
-from app.config import DB_PATH, PATHS
+from app.config import DB_PATH, PATHS, USER_PREFS
 from app.editbiz import EditBusinessForm
+from app.education import open_add_education_window
 
 from app.family_linkage import open_family_linkage_window  # Importing family linkage module
 
@@ -78,6 +79,7 @@ from app.date_utils import (
     date_sort_key,
 )
 from app.map_control import MapController
+from app.user_prefs import load_tab_prefs
 
 parser = argparse.ArgumentParser(description="Edit a person or add a new one")
 parser.add_argument("id", nargs="?", help="Person ID or related person ID")
@@ -373,6 +375,11 @@ def refresh_mother_var():
     mother_var.set(row[0] if row and row[0] is not None else "")
     update_mother_name()
 
+def refresh_parent_vars():
+    """Refresh both father and mother fields."""
+    refresh_father_var()
+    refresh_mother_var()
+
 def open_spouse_record():
     selected_spouse_info = spouse_dropdown.get()
     if selected_spouse_info:
@@ -664,6 +671,110 @@ def create_orgs_tab(notebook, person_id):
         else:
             btn_edit["state"] = "normal"
             btn_delete["state"] = "normal"
+
+# -------------------------------
+# START OF THE INSTITUTION TAB CODE
+# -------------------------------
+
+institution_tab_frame = None
+institution_tree = None
+_institution_notebook = None
+_institution_person_id = None
+
+def has_institution_data(pid):
+    cursor.execute(
+        "SELECT 1 FROM Inst_Affiliation WHERE person_id=? LIMIT 1",
+        (pid,),
+    )
+    return cursor.fetchone() is not None
+
+def refresh_institution_tab():
+    global institution_tab_frame, institution_tree
+    if _institution_notebook is None or _institution_person_id is None:
+        return
+    cursor.execute(
+        """
+        SELECT a.inst_affiliation_id, i.inst_name, a.inst_affiliation_role,
+               a.inst_affiliation_start_date, a.inst_affiliation_end_date,
+               a.inst_affiliation_notes
+          FROM Inst_Affiliation a
+          JOIN Institution i ON a.inst_id = i.inst_id
+         WHERE a.person_id = ?
+         ORDER BY a.inst_affiliation_start_date
+        """,
+        (_institution_person_id,),
+    )
+    rows = cursor.fetchall()
+
+    if institution_tab_frame is None:
+        if rows:
+            create_institution_tab(_institution_notebook, _institution_person_id)
+        return
+
+    institution_tree.delete(*institution_tree.get_children())
+    for row in rows:
+        institution_tree.insert("", "end", values=row)
+
+    if not rows and institution_tab_frame is not None:
+        idx = _institution_notebook.index(institution_tab_frame)
+        _institution_notebook.forget(idx)
+        institution_tab_frame = None
+
+def create_institution_tab(notebook, person_id):
+    global institution_tab_frame, institution_tree, _institution_notebook, _institution_person_id
+    _institution_notebook = notebook
+    _institution_person_id = person_id
+    if institution_tab_frame is not None:
+        return institution_tab_frame
+
+    frame = ttk.Frame(notebook)
+    institution_tab_frame = frame
+    notebook.add(frame, text="Institutions")
+
+    columns = ("affil_id", "Institution", "Role", "Start", "End", "Notes")
+    institution_tree = ttk.Treeview(frame, columns=columns, show="headings", height=8)
+    for col in columns:
+        institution_tree.heading(col, text=col)
+        width = 80 if col in ("Start", "End") else 150
+        if col == "affil_id":
+            width = 0
+        institution_tree.column(col, width=width, anchor="w", stretch=(col != "affil_id"))
+    institution_tree.pack(fill="both", expand=True, padx=5, pady=5)
+
+    btn_frame = ttk.Frame(frame)
+    btn_frame.pack(fill="x", padx=5, pady=5)
+
+    def add_affiliation():
+        inst_id = simpledialog.askinteger("Institution ID", "Enter Institution ID:")
+        if inst_id is None:
+            return
+        role = simpledialog.askstring("Role", "Enter role (optional):")
+        cursor.execute(
+            "INSERT INTO Inst_Affiliation (inst_id, person_id, inst_affiliation_role) VALUES (?, ?, ?)",
+            (inst_id, person_id, role),
+        )
+        connection.commit()
+        refresh_institution_tab()
+
+    def delete_affiliation():
+        selected = institution_tree.selection()
+        if not selected:
+            messagebox.showwarning("No Selection", "Please select a record to delete.")
+            return
+        affil_id = institution_tree.item(selected[0])["values"][0]
+        if messagebox.askyesno("Confirm Delete", "Delete selected affiliation?"):
+            cursor.execute(
+                "DELETE FROM Inst_Affiliation WHERE inst_affiliation_id=?",
+                (affil_id,),
+            )
+            connection.commit()
+            refresh_institution_tab()
+
+    ttk.Button(btn_frame, text="Add", command=add_affiliation).pack(side="left", padx=5)
+    ttk.Button(btn_frame, text="Delete", command=delete_affiliation).pack(side="left", padx=5)
+
+    refresh_institution_tab()
+    return frame
 
 # -------------------------------   
 # START OF THE RECORDS TAB CODE
@@ -2294,6 +2405,8 @@ notebook.grid(row=0, column=0, sticky="nsew")
 
 bold_font = font.Font(weight="bold")
 
+tab_prefs = load_tab_prefs()
+
 # Add the Vital tab
 frame_overview = ttk.Frame(notebook, takefocus=True)
 notebook.add(frame_overview, text='Overview')
@@ -2307,30 +2420,35 @@ person_id = person_record[0]
 bio = person_record[20]
 create_narrative_tab(notebook, bio, person_id)
 
-# Add the Family tab
-# create_family_tab(notebook, person_record[0])
+if tab_prefs.get("family"):
+    create_family_tab(notebook, person_record[0])
 
-# Add the Lived At tab
-create_residence_tab(notebook, person_record[0])
+if tab_prefs.get("residence"):
+    create_residence_tab(notebook, person_record[0])
 
-# Add the Education tab
-create_education_tab(notebook, person_record[0])
+if tab_prefs.get("education"):
+    create_education_tab(notebook, person_record[0])
 
-# Add the Businesses tab
-create_business_tab(notebook, person_record[0])
+if tab_prefs.get("business"):
+    create_business_tab(notebook, person_record[0])
 
-# Add the Records tab
-create_records_tab(notebook, person_record[0])
+if tab_prefs.get("records"):
+    create_records_tab(notebook, person_record[0])
 
-#Add the Orgs tab
-create_orgs_tab(notebook, person_record[0])
+if tab_prefs.get("orgs"):
+    create_orgs_tab(notebook, person_record[0])
 
-# Add the Media tab
-create_media_tab(notebook, person_record[0])
+# Conditionally add the Institutions tab
+if USER_PREFS.get("enable_institution_tab") and has_institution_data(person_record[0]):
+    create_institution_tab(notebook, person_record[0])
 
-# Add the Sources tab
-frame_sources = ttk.Frame(notebook)
-notebook.add(frame_sources, text='Sources')
+
+if tab_prefs.get("media"):
+    create_media_tab(notebook, person_record[0])
+
+if tab_prefs.get("sources"):
+    frame_sources = ttk.Frame(notebook)
+    notebook.add(frame_sources, text='Sources')
 
 # Record ID entry
 label_id = ttk.Label(frame_overview, text="Record ID: ")
@@ -2514,7 +2632,7 @@ label_father_name.bind("<Double-1>", open_father_record)
 ttk.Button(
     frame_overview,
     text="Link or Add Father",
-    command=lambda: open_person_linkage_popup(record_id, role='father', refresh_callback=refresh_father_var)
+    command=lambda: open_person_linkage_popup(record_id, role='father', refresh_callback=refresh_parent_vars)
 ).grid(row=11, column=4, padx=5, pady=5, sticky='w')
 
 # Mother entry
@@ -2531,7 +2649,7 @@ label_mother_name.bind("<Double-1>", open_mother_record)
 ttk.Button(
     frame_overview,
     text="Link or Add Mother",
-    command=lambda: open_person_linkage_popup(record_id, role='mother', refresh_callback=refresh_mother_var)
+    command=lambda: open_person_linkage_popup(record_id, role='mother', refresh_callback=refresh_parent_vars)
 ).grid(row=12, column=4, padx=5, pady=5, sticky='w')
 
 # Separator on the form

@@ -48,3 +48,8 @@ class PATHS:
     biz_ownership = str(APP_DIR / "biz_ownership.py")
     biz_employees = str(APP_DIR / "biz_employees.py")
     mapsections2 = str(APP_DIR / "mapsections2.py")
+
+# Basic user preference flags
+USER_PREFS = {
+    "enable_institution_tab": True,
+}
