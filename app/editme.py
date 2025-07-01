@@ -31,6 +31,7 @@ from app.life_events_editor import create_embedded_life_events
 from app.config import DB_PATH, PATHS, USER_PREFS
 from app.editbiz import EditBusinessForm
 from app.education import open_add_education_window
+from app.tab_launcher import launch_tab
 
 from app.family_linkage import open_family_linkage_window  # Importing family linkage module
 
@@ -90,21 +91,21 @@ parser.add_argument("--new-person", action="store_true", help="Add a new person"
 args = parser.parse_args()
 
 if args.new_child:
-    cmd = [sys.executable, "-m", "app.addme"]
+    params = []
     if args.new_father and args.id:
-        cmd.extend(["--father", str(args.id)])
+        params.extend(["--father", str(args.id)])
     elif args.new_mother and args.id:
-        cmd.extend(["--mother", str(args.id)])
-    subprocess.Popen(cmd)
+        params.extend(["--mother", str(args.id)])
+    launch_tab("addme", *params)
     sys.exit(0)
 elif args.new_father and args.id:
-    subprocess.Popen([sys.executable, "-m", "app.addme", "--father", str(args.id)])
+    launch_tab("addme", "--father", str(args.id))
     sys.exit(0)
 elif args.new_mother and args.id:
-    subprocess.Popen([sys.executable, "-m", "app.addme", "--mother", str(args.id)])
+    launch_tab("addme", "--mother", str(args.id))
     sys.exit(0)
 elif args.new_person:
-    subprocess.Popen([sys.executable, "-m", "app.addme"])
+    launch_tab("addme")
     sys.exit(0)
 
 
@@ -253,8 +254,8 @@ def apply_context_menu_to_all_entries(container):
 def add_residence_rec(event=None):
     selected_item = tree.focus()
     record_id = tree.item(selected_item)['values'][0]
-    subprocess.Popen([sys.executable, "-m", "app.addresident", str(record_id)])
-
+    launch_tab("addresident", str(record_id))
+    
 def update_spouse_name(person_id):
     # Query the Marriages table for the current person's spouse(s) along with birth and death dates
     cursor.execute("""
@@ -349,19 +350,19 @@ def open_spouse_record(event=None):
     spouse_id = entry_married_to.get()
     if spouse_id.isdigit():
         window.destroy()
-        subprocess.Popen([sys.executable, "-m", "app.editme", str(spouse_id)])
+        launch_tab("editme", str(spouse_id))
 
 def open_father_record(event=None):
     father_id = father_var.get()
     if father_id.isdigit():
         window.destroy()
-        subprocess.Popen([sys.executable, "-m", "app.editme", str(father_id)])
+        launch_tab("editme", str(father_id))
 
 def open_mother_record(event=None):
     mother_id = mother_var.get()
     if mother_id.isdigit():
         window.destroy()
-        subprocess.Popen([sys.executable, "-m", "app.editme", str(mother_id)])
+        launch_tab("editme", str(mother_id))
 
 def refresh_father_var():
     cursor.execute("SELECT father FROM People WHERE id = ?", (record_id,))
@@ -386,14 +387,14 @@ def open_spouse_record():
         spouse_id = selected_spouse_info.split(':')[0].strip()
         if spouse_id.isdigit():
             window.destroy()
-            subprocess.Popen([sys.executable, "-m", "app.editme", str(spouse_id)])
+            launch_tab("editme", str(spouse_id))
             
 def open_child_record(event=None):
     # Get the selected item from the Treeview
     selected_item = children_tree.focus()
     record_id = children_tree.item(selected_item)['values'][0]  # Assuming the first value is the ID
     window.destroy()
-    subprocess.Popen([sys.executable, "-m", "app.editme", str(record_id)])        
+    launch_tab("editme", str(record_id))        
 
 # Function to update the record in the database
 def update_record():
@@ -556,9 +557,60 @@ def open_add_menu(event=None):
         y = add_info_btn.winfo_rooty() + add_info_btn.winfo_height()
         menu.tk_popup(x, y)
 
+def open_photo_menu(event=None):
+    """Display a dynamic menu for the photo area."""
+    prefs = load_tab_prefs()
+    menu = tk.Menu(window, tearoff=0)
+
+    def launch(module, args=None):
+        args = args or []
+        subprocess.Popen([sys.executable, "-m", module, *args])
+
+    # Records submenu example
+    if prefs.get("records"):
+        records_menu = tk.Menu(menu, tearoff=0)
+        census_args = [
+            str(record_id),
+            person_record[1] or "",
+            person_record[2] or "",
+            person_record[3] or "",
+            person_record[6] or "",
+        ]
+        records_menu.add_command(
+            label="Census",
+            command=lambda: launch("app.addcensus", census_args),
+        )
+        records_menu.add_command(
+            label="Deeds",
+            command=lambda: launch("app.add_deed_dialog"),
+        )
+        menu.add_cascade(label="Records", menu=records_menu)
+
+    tab_modules = {
+        "family": [("Family Tree", "app.buildatree")],
+        "residence": [("Add Residence", "app.addresident")],
+        "education": [("Add Education", "app.education")],
+        "business": [("Businesses", "app.business")],
+        "orgs": [("Organizations", "app.orgs")],
+        "media": [("Map Viewer", "app.map_viewer")],
+        "sources": [("Sources", "app.sources")],
+    }
+
+    for tab, items in tab_modules.items():
+        if prefs.get(tab):
+            for label, module in items:
+                menu.add_command(label=label, command=lambda m=module: launch(m))
+
+    if event:
+        menu.tk_popup(event.x_root, event.y_root)
+    else:
+        x = photo_menu_btn.winfo_rootx()
+        y = photo_menu_btn.winfo_rooty() + photo_menu_btn.winfo_height()
+        menu.tk_popup(x, y)
+
 
 def add_a_spouse():
-    subprocess.run([sys.executable, "-m", "app.marriagerecord_add"])
+    launch_tab("marriagerecord_add", wait=True)
 
 # -------------------------------   
 # START OF THE ORGS TAB CODE
@@ -596,7 +648,7 @@ def create_orgs_tab(notebook, person_id):
 
     def launch_add_membership(person_id, refresh_callback):
         print(f"Launching members.py with person_id={person_id}")
-        subprocess.run([sys.executable, "-m", "app.members", "--for-person", str(person_id)])
+        launch_tab("members", "--for-person", str(person_id), wait=True)
         print("Returned from subprocess — refreshing memberships")
         refresh_callback()
 
@@ -621,7 +673,7 @@ def create_orgs_tab(notebook, person_id):
             messagebox.showwarning("No Selection", "Please select a membership to edit.")
             return
         membership_id = table.focus()
-        subprocess.run([sys.executable, PATHS.members, "--edit-membership", str(membership_id)])
+        launch_tab("members", "--edit-membership", str(membership_id), wait=True)
         refresh_callback()
 
     btn_edit = ttk.Button(button_frame, text="Edit Membership",
@@ -666,7 +718,7 @@ def create_orgs_tab(notebook, person_id):
     def on_item_double_click(event):
         selected_id = table.focus()  # Get the 'iid' of the selected item, which is the membership_id
         # Call the function to open the edit window, passing the membership_id
-        subprocess.run([sys.executable, "-m", "app.members", "--edit-membership", str(selected_id)])
+        launch_tab("members", "--edit-membership", str(selected_id), wait=True)
         refresh_org_memberships()
 
     table.bind("<Double-1>", on_item_double_click)  # Bind double-click event
@@ -1037,7 +1089,7 @@ def create_business_tab(notebook, person_id):
             ))
 
     def launch_add_ownership():
-        subprocess.run([sys.executable, "-m", "app.biz_ownership", "--for-person", str(person_id)])
+        launch_tab("biz_ownership", "--for-person", str(person_id), wait=True)
         refresh_ownerships()
 
     def launch_edit_ownership():
@@ -1046,7 +1098,7 @@ def create_business_tab(notebook, person_id):
             messagebox.showwarning("No Selection", "Please select an owner record to edit.")
             return
         ownership_id = owner_tree.item(selected[0])["values"][0]
-        subprocess.run([sys.executable, "-m", "app.biz_ownership", "--edit-ownership", str(ownership_id)])
+        launch_tab("biz_ownership", "--edit-ownership", str(ownership_id), wait=True)
         refresh_ownerships()
 
     def launch_delete_ownership():
@@ -1131,7 +1183,7 @@ def create_business_tab(notebook, person_id):
             ))
 
     def launch_add_employment():
-        subprocess.run([sys.executable, "-m", "app.biz_employees", "--for-person", str(person_id)])
+        launch_tab("biz_employees", "--for-person", str(person_id), wait=True)
         refresh_employments()
 
     def launch_edit_employment():
@@ -1140,7 +1192,7 @@ def create_business_tab(notebook, person_id):
             messagebox.showwarning("No Selection", "Please select an employment record to edit.")
             return
         emp_id = employee_tree.item(selected[0])["values"][0]
-        subprocess.run([sys.executable, "-m", "app.biz_employees", "--edit-employment", str(emp_id)])
+        launch_tab("biz_employees", "--edit-employment", str(emp_id), wait=True)
         refresh_employments()
 
     def launch_delete_employment():
@@ -1562,7 +1614,7 @@ def open_person_record(event):
     person_id = related_people_tree.item(selected_item, 'values')[0]  # Assuming ID is the 1st column
     
     # Open the editme.py script with the person's ID
-    subprocess.Popen([sys.executable, "-m", "app.editme", str(person_id)])
+    launch_tab("editme", str(person_id))
 
 # -------------------------------   
 # START OF THE MEDIA TAB CODE
@@ -1693,7 +1745,7 @@ def create_education_tab(notebook, id):
 
 def on_item_double_click(event, person_id):
     
-    subprocess.Popen([sys.executable, "-m", "app.mapsections2", str(record_id)])
+    launch_tab("mapsections2", str(record_id))
   
 def map_it_action(tree):
     # Define the action for the "Map It" button
@@ -2363,7 +2415,7 @@ def create_spouse_dropdown_menu():
         spouse_dropdown_menu.add_command(label="View Spouse Record", command=open_spouse_record)
         spouse_dropdown_menu.add_command(label="Edit Marriage", command=lambda: edit_marriage_record())
         spouse_dropdown_menu.add_command(label="Delete Marriage Record", command=delete_marriage_record)
-    spouse_dropdown_menu.add_command(label="Add a Spouse", command=lambda: subprocess.Popen([sys.executable, "-m", "app.marriagerecord_add", str(record_id)]))
+    spouse_dropdown_menu.add_command(label="Add a Spouse", command=lambda: launch_tab("marriagerecord_add", str(record_id)))
     
     # Bind the right-click event
     label_spouse_dropdown.bind("<Button-1>", lambda e: spouse_dropdown_menu.post(e.x_root, e.y_root))
@@ -2373,7 +2425,7 @@ def edit_marriage_record():
     if selected_spouse_info:
         spouse_id = selected_spouse_info.split(':')[0].strip()
         if spouse_id.isdigit():
-            subprocess.Popen([sys.executable, "-m", "app.marriagerecord_handle", str(record_id), spouse_id])
+            launch_tab("marriagerecord_handle", str(record_id), spouse_id)
         else:
             messagebox.showerror("Error", "Invalid spouse ID.")
     else:
@@ -3067,6 +3119,13 @@ display_image(frame_photo, image_path, add_photo_button)
 # Add-info button to create new links
 add_info_btn = ttk.Button(frame_photo, text="+", width=3, command=open_add_menu)
 add_info_btn.grid(row=1, column=0, pady=5)
+
+# Button to open dynamic photo menu
+photo_menu_btn = ttk.Button(frame_photo, text="Menu", width=5, command=open_photo_menu)
+photo_menu_btn.grid(row=1, column=1, padx=5, pady=5)
+
+# Right-click on photo area to open the menu
+frame_photo.bind("<Button-3>", open_photo_menu)
 
 my_custom_locations = get_custom_list('custom_locations')
 my_custom_cemeteries = get_custom_list('custom_cemeteries')
