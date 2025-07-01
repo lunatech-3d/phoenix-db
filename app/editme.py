@@ -538,6 +538,25 @@ def add_a_photo():
         messagebox.showinfo("No File Selected", "No file was selected. Please try again.")
 
 
+def open_add_menu(event=None):
+    """Display a menu of actions to add related information."""
+    menu = tk.Menu(window, tearoff=0)
+    menu.add_command(
+        label="Add Education",
+        command=lambda: open_add_education_window(record_id, connection),
+    )
+    menu.add_command(
+        label="Add Deed",
+        command=lambda: AddDeedDialog(window, record_id),
+    )
+    if event:
+        menu.tk_popup(event.x_root, event.y_root)
+    else:
+        x = add_info_btn.winfo_rootx()
+        y = add_info_btn.winfo_rooty() + add_info_btn.winfo_height()
+        menu.tk_popup(x, y)
+
+
 def add_a_spouse():
     subprocess.run([sys.executable, "-m", "app.marriagerecord_add"])
 
@@ -681,10 +700,90 @@ institution_tree = None
 _institution_notebook = None
 _institution_person_id = None
 
+# Helper functions to check if a person has data for specific tabs. These are
+# used so tabs are displayed when data exists even if the user's default
+# preference is to hide the tab.
+
+def has_family_data(pid):
+    """Return True if the person has any recorded family relationships."""
+    cursor.execute(
+        "SELECT father, mother, married_to FROM People WHERE id=?",
+        (pid,),
+    )
+    row = cursor.fetchone()
+    if row and any(row):
+        return True
+    cursor.execute(
+        "SELECT 1 FROM People WHERE father=? OR mother=? LIMIT 1",
+        (pid, pid),
+    )
+    return cursor.fetchone() is not None
+
+
+def has_residence_data(pid):
+    cursor.execute(
+        "SELECT 1 FROM ResHistory WHERE person_id=? LIMIT 1",
+        (pid,),
+    )
+    return cursor.fetchone() is not None
+
+
+def has_education_data(pid):
+    cursor.execute(
+        "SELECT 1 FROM Education WHERE person_id=? LIMIT 1",
+        (pid,),
+    )
+    return cursor.fetchone() is not None
+
+
+def has_business_data(pid):
+    cursor.execute(
+        "SELECT 1 FROM BizOwnership WHERE person_id=? LIMIT 1",
+        (pid,),
+    )
+    if cursor.fetchone():
+        return True
+    cursor.execute(
+        "SELECT 1 FROM BizEmployment WHERE person_id=? LIMIT 1",
+        (pid,),
+    )
+    return cursor.fetchone() is not None
+
+
+def has_records_data(pid):
+    checks = [
+        ("SELECT 1 FROM Census WHERE person_id=? LIMIT 1", (pid,)),
+        ("SELECT 1 FROM Tax_Records WHERE people_id=? LIMIT 1", (pid,)),
+        ("SELECT 1 FROM LegalNoticeParties WHERE person_id=? LIMIT 1", (pid,)),
+        ("SELECT 1 FROM DeedParties WHERE person_id=? LIMIT 1", (pid,)),
+    ]
+    for q, params in checks:
+        cursor.execute(q, params)
+        if cursor.fetchone():
+            return True
+    return False
+
+
+def has_orgs_data(pid):
+    cursor.execute(
+        "SELECT 1 FROM Membership WHERE person_id=? LIMIT 1",
+        (pid,),
+    )
+    return cursor.fetchone() is not None
+
+
+def has_media_data(pid):
+    cursor.execute(
+        "SELECT 1 FROM MediaPerson WHERE person_id=? LIMIT 1",
+        (pid,),
+    )
+    return cursor.fetchone() is not None
+
+
 def has_institution_data(pid):
     cursor.execute(
-        "SELECT 1 FROM Inst_Affiliation WHERE person_id=? LIMIT 1",
-        (pid,),
+        "SELECT 1 FROM Inst_Staff WHERE person_id=? UNION SELECT 1 FROM Inst_GroupMember WHERE person_id=? UNION SELECT 1 FROM Inst_Event WHERE person_id=? LIMIT 1",
+        (pid, pid, pid),
     )
     return cursor.fetchone() is not None
 
@@ -2420,30 +2519,29 @@ person_id = person_record[0]
 bio = person_record[20]
 create_narrative_tab(notebook, bio, person_id)
 
-if tab_prefs.get("family"):
+if tab_prefs.get("family") or has_family_data(person_record[0]):
     create_family_tab(notebook, person_record[0])
 
-if tab_prefs.get("residence"):
+if tab_prefs.get("residence") or has_residence_data(person_record[0]):
     create_residence_tab(notebook, person_record[0])
 
-if tab_prefs.get("education"):
+if tab_prefs.get("education") or has_education_data(person_record[0]):
     create_education_tab(notebook, person_record[0])
 
-if tab_prefs.get("business"):
+if tab_prefs.get("business") or has_business_data(person_record[0]):
     create_business_tab(notebook, person_record[0])
 
-if tab_prefs.get("records"):
+if tab_prefs.get("records") or has_records_data(person_record[0]):
     create_records_tab(notebook, person_record[0])
 
-if tab_prefs.get("orgs"):
+if tab_prefs.get("orgs") or has_orgs_data(person_record[0]):
     create_orgs_tab(notebook, person_record[0])
 
 # Conditionally add the Institutions tab
-if USER_PREFS.get("enable_institution_tab") and has_institution_data(person_record[0]):
+if has_institution_data(person_record[0]):
     create_institution_tab(notebook, person_record[0])
 
-
-if tab_prefs.get("media"):
+if tab_prefs.get("media") or has_media_data(person_record[0]):
     create_media_tab(notebook, person_record[0])
 
 if tab_prefs.get("sources"):
@@ -2965,6 +3063,10 @@ add_photo_button.grid(row=0, column=2, padx=5)
 add_photo_button.bind("<Return>", lambda event: on_enter(event, add_a_photo))
         
 display_image(frame_photo, image_path, add_photo_button)
+
+# Add-info button to create new links
+add_info_btn = ttk.Button(frame_photo, text="+", width=3, command=open_add_menu)
+add_info_btn.grid(row=1, column=0, pady=5)
 
 my_custom_locations = get_custom_list('custom_locations')
 my_custom_cemeteries = get_custom_list('custom_cemeteries')
