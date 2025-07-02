@@ -11,9 +11,7 @@ from PIL import ImageTk, Image
 
 #Local Imports
 from app.config import DB_PATH, PATHS
-from app.tab_launcher import launch_tab
 from app.person_search import search_people
-from app.user_prefs import open_options_dialog
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -29,10 +27,10 @@ def close_form():
 
 
 def launch_event_editor():
-    launch_tab("events")
+    subprocess.Popen([sys.executable, "-m", "app.events"])
 
 def open_address_management():
-    launch_tab("address_management")
+    subprocess.Popen([sys.executable, "-m", "app.address_management"])
 
 def export_data():
     # Connect to the database
@@ -181,7 +179,7 @@ def build_a_tree():
     selected_item = tree.focus()
     if selected_item:
         record_id = tree.item(selected_item)['values'][1]
-        launch_tab("buildatree", str(record_id), wait=True)
+        subprocess.run([sys.executable, "-m", "app.buildatree", str(record_id)])
     else:
         messagebox.showinfo("No One Selected", "Please select a record in the table.")
 
@@ -190,48 +188,46 @@ def build_an_ancestor_tree():
     selected_item = tree.focus()
     if selected_item:
         record_id = tree.item(selected_item)['values'][1]
-        launch_tab("buildancestortree", str(record_id), wait=True)
+        subprocess.run([sys.executable, "-m", "app.buildancestortree", str(record_id)])
     else:
         messagebox.showinfo("No One Selected", "Please select a record in the table.")
 
 
 def view_busineses():
     # Run the showbusinesses.py script with the necessary arguments
-        launch_tab("showbusinesses", wait=True)
+        subprocess.run([sys.executable, "-m", "app.showbusinesses"])
 
 def view_residents():
     # Run the showresidents.py script with the necessary arguments
-        launch_tab("showresidents", wait=True)
+        subprocess.run([sys.executable, "-m", "app.showresidents"])
 
 def view_sources():
      # Run the sources.py script with the necessary arguments
-        launch_tab("sources", wait=True)
+        subprocess.run([sys.executable, "-m", "app.sources"])
         
-
 def view_addresses():
     # Run the viewtheaddresses.py script with the necessary arguments
-        launch_tab("viewtheaddresses", wait=True)
+        subprocess.run([sys.executable, "-m", "app.viewtheaddresses"])
         
 def view_mayors():
     # Run the showmayors.py script with the necessary arguments
-        launch_tab("showmayors")
+        subprocess.Popen([sys.executable, "-m", "app.showmayors"])
         
-
 def view_doc_types():
     # Run the doctypesupport.py script
-        launch_tab("doctypesupport", wait=True)
+        subprocess.run([sys.executable, "-m", "app.doctypesupport"])
 
 def view_census_recs():
     # Run the showcensusrecs.py script
-        launch_tab("showcensusrecs", wait=True)
+        subprocess.run([sys.executable,"-m", "app.showcensusrecs"])
 
 def view_orgs():
     # Run the orgs.py script
-        launch_tab("orgs", wait=True)
+        subprocess.run([sys.executable, "-m", "app.orgs"])
 
 def view_members():
     # Run the members.py script
-        launch_tab("members", wait=True)
+        subprocess.run([sys.executable, "-m", "app.members"])
 
 
 # Function to add a census record
@@ -252,17 +248,14 @@ def add_census_rec():
         person_info = tuple("" if value is None else value for value in person_info)
 
         # Run the addcensus.py script with the necessary arguments
-        launch_tab("addcensus", str(record_id), *person_info)
+        subprocess.Popen([sys.executable, "-m", "app.addcensus", str(record_id)] + list(person_info))
 
     else:
         messagebox.showinfo("No One Selected", "Please select someone from the table.")
 
 # Function to open the FindAGrave Matching Interface
 def open_findagrave_matching():
-    launch_tab("matchgraverecords", wait=True)
-
-def open_options():
-    open_options_dialog(window)
+    subprocess.run([sys.executable, PATHS.matchgraverecords])
 
 def open_edit_form(event):
     selected_item = tree.focus()
@@ -289,7 +282,7 @@ def open_edit_form(event):
 
     # Check if record_id is not empty
     if record_id:
-        launch_tab("editme", str(record_id))
+        subprocess.Popen([sys.executable, "-m", "app.editme", str(record_id)])
 
     else:
         messagebox.showinfo("No Record Found", "The record you're trying to access does not exist.")
@@ -426,10 +419,10 @@ def delete_record():
 
 # Function to open the add form
 def open_add_form():
-    launch_tab("addme")
+    subprocess.Popen([sys.executable, "-m", "app.addme"])
 
 def open_business_management():
-    launch_tab("business")
+    subprocess.Popen([sys.executable, "-m", "app.business"])
     
 def open_inst_management():
     subprocess.Popen([sys.executable, "-m", "app.institution"])
@@ -442,7 +435,7 @@ def open_census_window():
     selected_item = tree.focus()
     if selected_item:  # Check if a record is selected
         record_id = tree.item(selected_item)['values'][0]
-        launch_tab("censusform", str(record_id))
+        subprocess.Popen([sys.executable, "-m", "app.censusform", str(record_id)])
     else:
         messagebox.showinfo("No One Selected", "Please select a record in the table.")
 
@@ -491,7 +484,6 @@ groups_menu.add_command(label="Org Members Table", command=view_members)
 tools_menu = tk.Menu(menu, tearoff=False)
 menu.add_cascade(label="Tools", menu=tools_menu)
 tools_menu.add_command(label="FindAGrave Matching", command=open_findagrave_matching)
-tools_menu.add_command(label="Options...", command=open_options)
 
 # Create a frame for the title
 frame_title = ttk.Frame(window)
