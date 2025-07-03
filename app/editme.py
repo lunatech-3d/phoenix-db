@@ -542,6 +542,7 @@ def add_a_photo():
         messagebox.showinfo("No File Selected", "No file was selected. Please try again.")
 
 
+
 def open_add_menu(event=None):
     """Display a menu of actions to add related information."""
     menu = tk.Menu(window, tearoff=0)
