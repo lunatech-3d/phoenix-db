@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 import sqlite3
 import os
 import sys
+import webbrowser
 
 #Local Imports
 from app.config import DB_PATH, PATHS
@@ -20,12 +21,15 @@ def create_embedded_obituary_editor(parent, person_id):
     section_frame = ttk.Frame(parent)
     section_frame.pack(fill="x", padx=10, pady=10)
 
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT obit_id, source_title, obit_text, date_published, date_precision, source_link
         FROM Obituaries
-        WHERE person_id = ? AND obit_text IS NOT NULL AND TRIM(obit_text) != ''
+        WHERE person_id = ?
         ORDER BY date_published ASC LIMIT 1
-    """, (person_id,))
+        """,
+        (person_id,)
+    )
     record = cursor.fetchone()
 
     obit_id = None

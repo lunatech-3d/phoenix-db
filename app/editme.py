@@ -2736,7 +2736,7 @@ buried_link_button_frame.grid(row=8, column=2, padx=5, pady=5, sticky='w')
 
 # --- Create both buttons immediately but don't pack yet ---
 button_buried_link = ttk.Button(buried_link_button_frame, text="Open Link", command=lambda: open_link(entry_buried_link.get()))
-button_findagrave = ttk.Button(buried_link_button_frame, text="Search FindAGrave", command=lambda: search_findagrave)
+button_findagrave = ttk.Button(buried_link_button_frame, text="Search FindAGrave", command=search_findagrave)
 
 # --- Toggle the correct button ---
 def toggle_findagrave_buttons():
@@ -2772,6 +2772,20 @@ entry_cem_tour_link = ttk.Entry(frame_overview, width=15)
 entry_cem_tour_link.grid(row=9, column=1, padx=5, pady=5, sticky='w')
 button_cem_tour_link = ttk.Button(frame_overview, text="Open Link", command=lambda: open_link(entry_cem_tour_link.get()))
 button_cem_tour_link.grid(row=9, column=2, padx=5, pady=5, sticky='w')
+
+# Function to toggle visibility of the cemetery tour link button
+def toggle_cem_tour_link_button(event=None):
+    if entry_cem_tour_link.get().strip():
+        button_cem_tour_link.grid()
+    else:
+        button_cem_tour_link.grid_remove()
+
+# Bind events to update button visibility
+entry_cem_tour_link.bind("<FocusOut>", toggle_cem_tour_link_button)
+entry_cem_tour_link.bind("<KeyRelease>", toggle_cem_tour_link_button)
+
+# Initialize button visibility at startup
+toggle_cem_tour_link_button()
 
 # Separator on the form
 separator = ttk.Separator(frame_overview, orient='horizontal')
@@ -3096,7 +3110,7 @@ entry_buried_link.insert(0, person_record[22]if person_record[22] is not None el
 toggle_findagrave_buttons()
 entry_buried_block.insert(0, person_record[23] if person_record[23] is not None else '')
 entry_cem_tour_link.insert(0, person_record[24] if person_record[24] is not None else '')
-
+toggle_cem_tour_link_button()
 
 # After filling the form fields with the record data
 # update_spouse_name()  # Update the spouse's name label
