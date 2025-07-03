@@ -30,7 +30,12 @@ from app.obituary_editor import create_embedded_obituary_editor
 from app.life_events_editor import create_embedded_life_events
 from app.config import DB_PATH, PATHS, USER_PREFS
 from app.editbiz import EditBusinessForm
-from app.education import open_add_education_window
+from app.education import (
+    open_add_education_window,
+    open_edit_education_window,
+    initialize_education_section,
+    load_education_records,
+)
 
 from app.family_linkage import open_family_linkage_window  # Importing family linkage module
 
@@ -540,14 +545,24 @@ def add_a_photo():
 def open_add_menu(event=None):
     """Display a menu of actions to add related information."""
     menu = tk.Menu(window, tearoff=0)
-    menu.add_command(
-        label="Add Education",
-        command=lambda: open_add_education_window(record_id, connection),
-    )
-    menu.add_command(
-        label="Add Deed",
-        command=lambda: AddDeedDialog(window, record_id),
-    )
+    
+    cur = connection.cursor()
+    cur.execute("SELECT COUNT(*) FROM Education WHERE person_id=?", (record_id,))
+    if cur.fetchone()[0] == 0:
+        menu.add_command(
+            label="Add Education",
+            command=lambda: open_add_education_window(
+                record_id, connection, lambda: create_education_tab(notebook, record_id)
+            ),
+        )
+
+    cur.execute("SELECT COUNT(*) FROM DeedParties WHERE person_id=?", (record_id,))
+    if cur.fetchone()[0] == 0:
+        menu.add_command(
+            label="Add Deed",
+            command=lambda: AddDeedDialog(window, record_id),
+        )
+    
     if event:
         menu.tk_popup(event.x_root, event.y_root)
     else:
@@ -787,20 +802,47 @@ def has_institution_data(pid):
     return cursor.fetchone() is not None
 
 def refresh_institution_tab():
+    """Reload the institution tree for the current person."""
     global institution_tab_frame, institution_tree
     if _institution_notebook is None or _institution_person_id is None:
         return
+    
     cursor.execute(
         """
-        SELECT a.inst_affiliation_id, i.inst_name, a.inst_affiliation_role,
-               a.inst_affiliation_start_date, a.inst_affiliation_end_date,
-               a.inst_affiliation_notes
-          FROM Inst_Affiliation a
-          JOIN Institution i ON a.inst_id = i.inst_id
-         WHERE a.person_id = ?
-         ORDER BY a.inst_affiliation_start_date
+        SELECT *
+        FROM (
+            SELECT 'staff' AS rec_type,
+                   s.inst_staff_id AS rec_id,
+                   i.inst_name AS inst_name,
+                   '' AS group_name,
+                   s.title AS title_role,
+                   s.start_date AS start_date,
+                   s.start_date_precision AS start_prec,
+                   s.end_date AS end_date,
+                   s.end_date_precision AS end_prec,
+                   s.notes AS notes
+              FROM Inst_Staff s
+              JOIN Institution i ON s.inst_id = i.inst_id
+             WHERE s.person_id = ?
+            UNION ALL
+            SELECT 'member' AS rec_type,
+                   gm.inst_group_member_id AS rec_id,
+                   i.inst_name AS inst_name,
+                   g.group_name AS group_name,
+                   gm.role AS title_role,
+                   gm.start_date AS start_date,
+                   NULL AS start_prec,
+                   gm.end_date AS end_date,
+                   NULL AS end_prec,
+                   gm.notes AS notes
+              FROM Inst_GroupMember gm
+              JOIN Inst_Group g ON gm.inst_group_id = g.inst_group_id
+              JOIN Institution i ON g.inst_id = i.inst_id
+             WHERE gm.person_id = ?
+        ) AS q
+        ORDER BY start_date
         """,
-        (_institution_person_id,),
+        (_institution_person_id, _institution_person_id),
     )
     rows = cursor.fetchall()
 
@@ -811,7 +853,36 @@ def refresh_institution_tab():
 
     institution_tree.delete(*institution_tree.get_children())
     for row in rows:
-        institution_tree.insert("", "end", values=row)
+        (
+            rec_type,
+            rec_id,
+            inst_name,
+            group_name,
+            title_role,
+            start_date,
+            start_prec,
+            end_date,
+            end_prec,
+            notes,
+        ) = row
+
+        start_fmt = format_date_for_display(start_date, start_prec)
+        end_fmt = format_date_for_display(end_date, end_prec)
+
+        institution_tree.insert(
+            "",
+            "end",
+            values=(
+                rec_id,
+                inst_name,
+                group_name or "",
+                title_role or "",
+                start_fmt,
+                end_fmt,
+                notes or "",
+            ),
+            tags=(rec_type,),
+        )
 
     if not rows and institution_tab_frame is not None:
         idx = _institution_notebook.index(institution_tab_frame)
@@ -829,47 +900,79 @@ def create_institution_tab(notebook, person_id):
     institution_tab_frame = frame
     notebook.add(frame, text="Institutions")
 
-    columns = ("affil_id", "Institution", "Role", "Start", "End", "Notes")
+    columns = ("rec_id", "Institution", "Group", "Title/Role", "Start", "End", "Notes")
     institution_tree = ttk.Treeview(frame, columns=columns, show="headings", height=8)
     for col in columns:
         institution_tree.heading(col, text=col)
-        width = 80 if col in ("Start", "End") else 150
-        if col == "affil_id":
+        if col in ("Start", "End"):
+            width = 80
+        elif col in ("rec_id",):
             width = 0
-        institution_tree.column(col, width=width, anchor="w", stretch=(col != "affil_id"))
+        else:
+            width = 150
+        institution_tree.column(col, width=width, anchor="w", stretch=(col != "rec_id"))
     institution_tree.pack(fill="both", expand=True, padx=5, pady=5)
 
     btn_frame = ttk.Frame(frame)
     btn_frame.pack(fill="x", padx=5, pady=5)
 
-    def add_affiliation():
+    def add_staff():
         inst_id = simpledialog.askinteger("Institution ID", "Enter Institution ID:")
         if inst_id is None:
             return
-        role = simpledialog.askstring("Role", "Enter role (optional):")
+        title = simpledialog.askstring("Title", "Enter title/role (optional):")
         cursor.execute(
-            "INSERT INTO Inst_Affiliation (inst_id, person_id, inst_affiliation_role) VALUES (?, ?, ?)",
-            (inst_id, person_id, role),
+            "INSERT INTO Inst_Staff (inst_id, person_id, title) VALUES (?, ?, ?)",
+            (inst_id, person_id, title),
         )
         connection.commit()
         refresh_institution_tab()
 
-    def delete_affiliation():
+    def add_member():
+        inst_id = simpledialog.askinteger("Institution ID", "Enter Institution ID:")
+        if inst_id is None:
+            return
+
+        role = simpledialog.askstring("Role", "Enter role (optional):")
+        cursor.execute(
+            "SELECT inst_group_id FROM Inst_Group WHERE inst_id=? AND group_name=?",
+            (inst_id, group_name),
+        )
+        res = cursor.fetchone()
+        if res:
+            group_id = res[0]
+        else:
+            cursor.execute(
+                "INSERT INTO Inst_Group (inst_id, group_name) VALUES (?, ?)",
+                (inst_id, group_name),
+            )
+            group_id = cursor.lastrowid
+        cursor.execute(
+            "INSERT INTO Inst_GroupMember (inst_group_id, person_id, role) VALUES (?, ?, ?)",
+            (group_id, person_id, role),
+        )
+        connection.commit()
+        refresh_institution_tab()
+
+    def delete_record():
         selected = institution_tree.selection()
         if not selected:
             messagebox.showwarning("No Selection", "Please select a record to delete.")
             return
-        affil_id = institution_tree.item(selected[0])["values"][0]
-        if messagebox.askyesno("Confirm Delete", "Delete selected affiliation?"):
-            cursor.execute(
-                "DELETE FROM Inst_Affiliation WHERE inst_affiliation_id=?",
-                (affil_id,),
-            )
+        item = selected[0]
+        rec_id = institution_tree.item(item)["values"][0]
+        rec_type = institution_tree.item(item, "tags")[0]
+        if messagebox.askyesno("Confirm Delete", "Delete selected record?"):
+            if rec_type == "staff":
+                cursor.execute("DELETE FROM Inst_Staff WHERE inst_staff_id=?", (rec_id,))
+            else:
+                cursor.execute("DELETE FROM Inst_GroupMember WHERE inst_group_member_id=?", (rec_id,))
             connection.commit()
             refresh_institution_tab()
 
-    ttk.Button(btn_frame, text="Add", command=add_affiliation).pack(side="left", padx=5)
-    ttk.Button(btn_frame, text="Delete", command=delete_affiliation).pack(side="left", padx=5)
+    ttk.Button(btn_frame, text="Add Staff", command=add_staff).pack(side="left", padx=5)
+    ttk.Button(btn_frame, text="Add Member", command=add_member).pack(side="left", padx=5)
+    ttk.Button(btn_frame, text="Delete", command=delete_record).pack(side="left", padx=5)
 
     refresh_institution_tab()
     return frame
@@ -1654,41 +1757,13 @@ def open_media_url(event, tree):
 # START OF THE EDUCATION TAB CODE
 # -------------------------------
 
-def create_education_tab(notebook, id):
-    cursor = connection.cursor()
-    cursor.execute("SELECT school_name, record_year, degree, position, notes, field_of_study FROM Education WHERE person_id = ?", (id,))
-    records = cursor.fetchall()
+def create_education_tab(notebook, person_id):
+    frame_education = ttk.Frame(notebook)
+    notebook.add(frame_education, text='Education/Career')
 
-    # If there are records for the person in the Education table
-    if records:
-        # Add the Education tab
-        frame_education = ttk.Frame(notebook)
-        notebook.add(frame_education, text='Education/Career')
-
-        # Create a tree view and add it to the frame
-        tree = ttk.Treeview(frame_education, columns=[i[0] for i in cursor.description], show='headings', height=12)
-        tree.pack(fill=tk.BOTH, expand=True)
-
-        # Configure the tree view columns
-        for column in tree['columns']:
-            tree.heading(column, text=column)
-
-        # Adjust the width of the columns
-        tree.column('school_name', width=150)
-        tree.heading('school_name', text='School')
-        tree.column('record_year', width=50)
-        tree.heading('record_year', text= 'Year')
-        tree.column('notes', width=300)
-        tree.column('position', width=150)
-
-        for column in ['degree', 'field_of_study']:
-            tree.column(column, width=100)
-
-        # Insert the data into the tree view
-        for record in records:
-            tree.insert('', 'end', values=[item if item else '' for item in record])
-
-    cursor.close()
+    tree = initialize_education_section(frame_education, connection, person_id)
+    load_education_records(connection.cursor(), tree, person_id)
+    return frame_education
 
 def on_item_double_click(event, person_id):
     
@@ -2528,7 +2603,7 @@ create_records_tab(notebook, person_record[0])
 
 create_orgs_tab(notebook, person_record[0])
 
-# create_institution_tab(notebook, person_record[0])
+create_institution_tab(notebook, person_record[0])
 
 create_media_tab(notebook, person_record[0])
 

@@ -1,77 +1,220 @@
 import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
+from app.config import DB_PATH
 
-def open_add_education_window(person_id, connection):
-    def save_education_record():
-        school_name = entry_school_name.get().strip()
-        record_year = entry_record_year.get().strip()
-        degree = entry_degree.get().strip()
-        position = entry_position.get().strip()
-        notes = entry_notes.get().strip()
-        field_of_study = entry_field_of_study.get().strip()
 
-        if not record_year.isdigit():
-            messagebox.showerror("Validation Error", "Record year must be a valid year.")
+def load_education_records(cursor, tree, person_id):
+    """Populate the tree with education records for a person."""
+    tree.delete(*tree.get_children())
+    cursor.execute(
+        """
+        SELECT id, school_name, record_year, degree,
+               field_of_study, position, notes
+          FROM Education
+         WHERE person_id = ?
+         ORDER BY record_year
+        """,
+        (person_id,),
+    )
+    for row in cursor.fetchall():
+        tree.insert("", "end", iid=row[0], values=row)
+
+
+def open_add_education_window(person_id, connection, refresh_callback=None):
+    """Dialog to add a new education record."""
+
+    def save_record():
+        school_name = entry_school.get().strip() or None
+        year = entry_year.get().strip()
+        degree = entry_degree.get().strip() or None
+        field = entry_field.get().strip() or None
+        position = entry_position.get().strip() or None
+        notes = entry_notes.get().strip() or None
+
+        if year and not year.isdigit():
+            messagebox.showerror("Validation Error", "Record year must be numeric or blank.")
             return
 
-        cursor = connection.cursor()
-        try:
-            cursor.execute("""
-                INSERT INTO Education (person_id, school_name, record_year, degree, position, notes, field_of_study)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (person_id, school_name, record_year, degree, position, notes, field_of_study))
+        cur = connection.cursor()
+        cur.execute(
+            """
+            INSERT INTO Education (person_id, school_name, record_year, degree,
+                                   field_of_study, position, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (person_id, school_name, year or None, degree, field, position, notes),
+        )
+        connection.commit()
+        if refresh_callback:
+            refresh_callback()
+        top.destroy()
+
+    top = tk.Toplevel()
+    top.title("Add Education Record")
+
+    frm = ttk.Frame(top, padding=10)
+    frm.grid(row=0, column=0, sticky="nsew")
+
+    ttk.Label(frm, text="School:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
+    entry_school = ttk.Entry(frm, width=40)
+    entry_school.grid(row=0, column=1, sticky="w", padx=5, pady=5)
+
+    ttk.Label(frm, text="Year:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
+    entry_year = ttk.Entry(frm, width=10)
+    entry_year.grid(row=1, column=1, sticky="w", padx=5, pady=5)
+
+    ttk.Label(frm, text="Degree:").grid(row=2, column=0, sticky="e", padx=5, pady=5)
+    entry_degree = ttk.Entry(frm, width=30)
+    entry_degree.grid(row=2, column=1, sticky="w", padx=5, pady=5)
+
+    ttk.Label(frm, text="Field of Study:").grid(row=3, column=0, sticky="e", padx=5, pady=5)
+    entry_field = ttk.Entry(frm, width=30)
+    entry_field.grid(row=3, column=1, sticky="w", padx=5, pady=5)
+
+    ttk.Label(frm, text="Position:").grid(row=4, column=0, sticky="e", padx=5, pady=5)
+    entry_position = ttk.Entry(frm, width=30)
+    entry_position.grid(row=4, column=1, sticky="w", padx=5, pady=5)
+
+    ttk.Label(frm, text="Notes:").grid(row=5, column=0, sticky="ne", padx=5, pady=5)
+    entry_notes = tk.Text(frm, width=40, height=4)
+    entry_notes.grid(row=5, column=1, sticky="w", padx=5, pady=5)
+
+    btn = ttk.Button(frm, text="Save", command=save_record)
+    btn.grid(row=6, column=0, columnspan=2, pady=10)
+
+    top.grab_set()
+    top.focus_force()
+
+
+def open_edit_education_window(education_id, connection, refresh_callback=None):
+    """Dialog to edit an existing education record."""
+    cur = connection.cursor()
+    cur.execute(
+        "SELECT person_id, school_name, record_year, degree, field_of_study, position, notes"
+        " FROM Education WHERE id = ?",
+        (education_id,),
+    )
+    row = cur.fetchone()
+    if not row:
+        messagebox.showerror("Error", "Education record not found.")
+        return
+    person_id, school, year, degree, field, position, notes = row
+
+    def save_record():
+        new_school = entry_school.get().strip() or None
+        new_year = entry_year.get().strip()
+        new_degree = entry_degree.get().strip() or None
+        new_field = entry_field.get().strip() or None
+        new_position = entry_position.get().strip() or None
+        new_notes = entry_notes.get().strip() or None
+        if new_year and not new_year.isdigit():
+            messagebox.showerror("Validation Error", "Record year must be numeric or blank.")
+            return
+        cur.execute(
+            """
+            UPDATE Education
+               SET school_name=?, record_year=?, degree=?,
+                   field_of_study=?, position=?, notes=?
+             WHERE id=?
+            """,
+            (new_school, new_year or None, new_degree, new_field, new_position, new_notes, education_id),
+        )
+        connection.commit()
+        if refresh_callback:
+            refresh_callback()
+        top.destroy()
+
+    top = tk.Toplevel()
+    top.title("Edit Education Record")
+
+    frm = ttk.Frame(top, padding=10)
+    frm.grid(row=0, column=0, sticky="nsew")
+
+    ttk.Label(frm, text="School:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
+    entry_school = ttk.Entry(frm, width=40)
+    entry_school.insert(0, school or "")
+    entry_school.grid(row=0, column=1, sticky="w", padx=5, pady=5)
+
+    ttk.Label(frm, text="Year:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
+    entry_year = ttk.Entry(frm, width=10)
+    entry_year.insert(0, year or "")
+    entry_year.grid(row=1, column=1, sticky="w", padx=5, pady=5)
+
+    ttk.Label(frm, text="Degree:").grid(row=2, column=0, sticky="e", padx=5, pady=5)
+    entry_degree = ttk.Entry(frm, width=30)
+    entry_degree.insert(0, degree or "")
+    entry_degree.grid(row=2, column=1, sticky="w", padx=5, pady=5)
+
+    ttk.Label(frm, text="Field of Study:").grid(row=3, column=0, sticky="e", padx=5, pady=5)
+    entry_field = ttk.Entry(frm, width=30)
+    entry_field.insert(0, field or "")
+    entry_field.grid(row=3, column=1, sticky="w", padx=5, pady=5)
+
+    ttk.Label(frm, text="Position:").grid(row=4, column=0, sticky="e", padx=5, pady=5)
+    entry_position = ttk.Entry(frm, width=30)
+    entry_position.insert(0, position or "")
+    entry_position.grid(row=4, column=1, sticky="w", padx=5, pady=5)
+
+    ttk.Label(frm, text="Notes:").grid(row=5, column=0, sticky="ne", padx=5, pady=5)
+    entry_notes = tk.Text(frm, width=40, height=4)
+    entry_notes.insert("1.0", notes or "")
+    entry_notes.grid(row=5, column=1, sticky="w", padx=5, pady=5)
+
+    ttk.Button(frm, text="Save", command=save_record).grid(row=6, column=0, columnspan=2, pady=10)
+
+    top.grab_set()
+    top.focus_force()
+
+
+def initialize_education_section(parent_frame, connection, person_id):
+    """Create the Education tab components and return the tree widget."""
+    columns = ("id", "School", "Year", "Degree", "Field", "Position", "Notes")
+    tree = ttk.Treeview(parent_frame, columns=columns, show="headings", height=8)
+    for col in columns:
+        tree.heading(col, text=col)
+        width = 80 if col == "Year" else 150
+        if col == "id":
+            width = 0
+        if col == "Notes":
+            width = 250
+        tree.column(col, width=width, anchor="w", stretch=(col != "id"))
+    tree.pack(fill="both", expand=True, padx=5, pady=5)
+
+    btn_frame = ttk.Frame(parent_frame)
+    btn_frame.pack(fill="x", padx=5, pady=5)
+
+    def refresh():
+        load_education_records(connection.cursor(), tree, person_id)
+
+    def add_record():
+        open_add_education_window(person_id, connection, refresh)
+
+    def edit_record():
+        selected = tree.selection()
+        if not selected:
+            messagebox.showwarning("No Selection", "Please select a record to edit.")
+            return
+        edu_id = tree.item(selected[0])["values"][0]
+        open_edit_education_window(edu_id, connection, refresh)
+
+    def delete_record():
+        selected = tree.selection()
+        if not selected:
+            messagebox.showwarning("No Selection", "Please select a record to delete.")
+            return
+        edu_id = tree.item(selected[0])["values"][0]
+        if messagebox.askyesno("Confirm Delete", "Delete selected education record?"):
+            cur = connection.cursor()
+            cur.execute("DELETE FROM Education WHERE id=?", (edu_id,))
             connection.commit()
-            messagebox.showinfo("Success", "Education record added successfully.")
-            education_window.destroy()
-            # Refresh the education tab if needed
-        except Exception as e:
-            messagebox.showerror("Error", f"An error occurred while saving the education record: {e}")
+            refresh()
 
-    # Create a new top-level window
-    education_window = tk.Toplevel()
-    education_window.title("Add Education Record")
+    ttk.Button(btn_frame, text="Add", command=add_record).pack(side="left", padx=5)
+    ttk.Button(btn_frame, text="Edit", command=edit_record).pack(side="left", padx=5)
+    ttk.Button(btn_frame, text="Delete", command=delete_record).pack(side="left", padx=5)
 
-    # Create and configure the form fields
-    frame_education_form = ttk.Frame(education_window, padding="10")
-    frame_education_form.grid(row=0, column=0, sticky='nsew')
+    tree.bind("<Double-1>", lambda e: edit_record())
 
-    # School Name entry with dropdown
-    label_school_name = ttk.Label(frame_education_form, text="School Name:")
-    label_school_name.grid(row=0, column=0, padx=5, pady=5, sticky='e')
-    entry_school_name = ttk.Entry(frame_education_form)
-    entry_school_name.grid(row=0, column=1, padx=5, pady=5, sticky='w')
-
-    # Record Year entry
-    label_record_year = ttk.Label(frame_education_form, text="Record Year:")
-    label_record_year.grid(row=1, column=0, padx=5, pady=5, sticky='e')
-    entry_record_year = ttk.Entry(frame_education_form)
-    entry_record_year.grid(row=1, column=1, padx=5, pady=5, sticky='w')
-
-    # Degree entry
-    label_degree = ttk.Label(frame_education_form, text="Degree:")
-    label_degree.grid(row=2, column=0, padx=5, pady=5, sticky='e')
-    entry_degree = ttk.Entry(frame_education_form)
-    entry_degree.grid(row=2, column=1, padx=5, pady=5, sticky='w')
-
-    # Position entry
-    label_position = ttk.Label(frame_education_form, text="Position:")
-    label_position.grid(row=3, column=0, padx=5, pady=5, sticky='e')
-    entry_position = ttk.Entry(frame_education_form)
-    entry_position.grid(row=3, column=1, padx=5, pady=5, sticky='w')
-
-    # Notes entry
-    label_notes = ttk.Label(frame_education_form, text="Notes:")
-    label_notes.grid(row=4, column=0, padx=5, pady=5, sticky='e')
-    entry_notes = ttk.Entry(frame_education_form, width=50)
-    entry_notes.grid(row=4, column=1, padx=5, pady=5, sticky='w')
-
-    # Field of Study entry
-    label_field_of_study = ttk.Label(frame_education_form, text="Field of Study:")
-    label_field_of_study.grid(row=5, column=0, padx=5, pady=5, sticky='e')
-    entry_field_of_study = ttk.Entry(frame_education_form)
-    entry_field_of_study.grid(row=5, column=1, padx=5, pady=5, sticky='w')
-
-    # Save Button
-    save_button = ttk.Button(frame_education_form, text="Save", command=save_education_record)
-    save_button.grid(row=6, column=0, columnspan=2, pady=10)
+    refresh()
+    return tree
