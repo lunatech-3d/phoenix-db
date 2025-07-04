@@ -146,6 +146,8 @@ class MemberForm:
         self.setup_form()
         if member_id:
             self.load_data()
+        elif person_id:
+            self.set_person_id(person_id)
 
     def setup_form(self):
         row = 0
@@ -156,12 +158,12 @@ class MemberForm:
         create_context_menu(g_entry)
         row += 1
 
-        ttk.Label(self.master, text="Person ID:").grid(row=row, column=0, sticky="e", padx=5, pady=5)
-        pid_entry = ttk.Entry(self.master, width=30)
-        pid_entry.grid(row=row, column=1, sticky="w", padx=5, pady=5)
-        self.entries["Person ID"] = pid_entry
-        create_context_menu(pid_entry)
-        ttk.Button(self.master, text="Lookup", command=lambda: person_search_popup(self.set_person_id)).grid(row=row, column=2, padx=5)
+        ttk.Label(self.master, text="Selected Person:").grid(row=row, column=0, sticky="e", padx=5, pady=5)
+        pframe = ttk.Frame(self.master)
+        pframe.grid(row=row, column=1, columnspan=2, sticky="w", padx=5, pady=5)
+        self.person_display = ttk.Label(pframe, text="(none)", width=40, relief="sunken", anchor="w")
+        self.person_display.pack(side="left", padx=(0, 5))
+        ttk.Button(pframe, text="Lookup", command=lambda: person_search_popup(self.set_person_id)).pack(side="left")
         row += 1
 
         for label in ["Role", "Start Date", "End Date", "Notes"]:
@@ -179,9 +181,25 @@ class MemberForm:
         apply_context_menu_to_all_entries(self.master)
 
     def set_person_id(self, pid):
-        self.entries["Person ID"].delete(0, tk.END)
-        self.entries["Person ID"].insert(0, pid)
-        self.person_id = pid
+        if pid is None:
+            self.person_display.config(text="(none)")
+            self.person_id = None
+            return
+        self.cursor.execute(
+            "SELECT first_name, middle_name, last_name, married_name FROM People WHERE id=?",
+            (pid,),
+        )
+        row = self.cursor.fetchone()
+        if row:
+            name_parts = [row[0], row[1], row[2]]
+            name = " ".join(part for part in name_parts if part)
+            if row[3]:
+                name += f" ({row[3]})"
+            self.person_display.config(text=name)
+            self.person_id = pid
+        else:
+            self.person_display.config(text="(not found)")
+            self.person_id = None
 
     def load_data(self):
         self.cursor.execute(
@@ -214,12 +232,12 @@ class MemberForm:
             return
 
         group_name = self.entries["Group Name"].get().strip()
-        pid = self.entries["Person ID"].get().strip()
+        pid = self.person_id
         role = self.entries["Role"].get().strip()
         notes = self.entries["Notes"].get().strip()
 
         if not group_name or not pid:
-            messagebox.showerror("Missing", "Group name and person ID are required")
+            messagebox.showerror("Missing", "Group name and person selection are required")
             return
 
         self.cursor.execute(
@@ -273,6 +291,7 @@ class EventForm:
         self.conn = sqlite3.connect(DB_PATH)
         self.cursor = self.conn.cursor()
         self.entries = {}
+        self.person_id = None
         self.setup_form()
         if event_id:
             self.load_data()
@@ -288,17 +307,17 @@ class EventForm:
             create_context_menu(entry)
             row += 1
 
-        ttk.Label(self.master, text="Person ID:").grid(row=row, column=0, sticky="e", padx=5, pady=5)
-        pid_entry = ttk.Entry(self.master, width=30)
-        pid_entry.grid(row=row, column=1, sticky="w", padx=5, pady=5)
-        self.entries["Person ID"] = pid_entry
-        create_context_menu(pid_entry)
-        ttk.Button(self.master, text="Lookup", command=lambda: person_search_popup(self.set_person_id)).grid(row=row, column=2, padx=5)
+        ttk.Label(self.master, text="Selected Person:").grid(row=row, column=0, sticky="e", padx=5, pady=5)
+        pframe = ttk.Frame(self.master)
+        pframe.grid(row=row, column=1, columnspan=2, sticky="w", padx=5, pady=5)
+        self.person_display = ttk.Label(pframe, text="(none)", width=40, relief="sunken", anchor="w")
+        self.person_display.pack(side="left", padx=(0, 5))
+        ttk.Button(pframe, text="Lookup", command=lambda: person_search_popup(self.set_person_id)).pack(side="left")
         row += 1
 
         ttk.Label(self.master, text="Original Text:").grid(row=row, column=0, sticky="ne", padx=5, pady=5)
-        otext = tk.Text(self.master, width=50, height=6)
-        otext.grid(row=row, column=1, columnspan=2, sticky="w", padx=5, pady=5)
+        otext = tk.Text(self.master, width=50, height=6, wrap="word")
+        otext.grid(row=row, column=1, columnspan=2, sticky="nsew", padx=5, pady=5)
         self.entries["Original Text"] = otext
         create_context_menu(otext)
         row += 1
@@ -310,8 +329,25 @@ class EventForm:
         apply_context_menu_to_all_entries(self.master)
 
     def set_person_id(self, pid):
-        self.entries["Person ID"].delete(0, tk.END)
-        self.entries["Person ID"].insert(0, pid)
+        if pid is None:
+            self.person_display.config(text="(none)")
+            self.person_id = None
+            return
+        self.cursor.execute(
+            "SELECT first_name, middle_name, last_name, married_name FROM People WHERE id=?",
+            (pid,),
+        )
+        row = self.cursor.fetchone()
+        if row:
+            name_parts = [row[0], row[1], row[2]]
+            name = " ".join(part for part in name_parts if part)
+            if row[3]:
+                name += f" ({row[3]})"
+            self.person_display.config(text=name)
+            self.person_id = pid
+        else:
+            self.person_display.config(text="(not found)")
+            self.person_id = None
 
     def load_data(self):
         self.cursor.execute(
@@ -351,7 +387,7 @@ class EventForm:
             edate, eprec,
             self.entries["Description"].get().strip(),
             self.entries["Original Text"].get("1.0", tk.END).strip(),
-            self.entries["Person ID"].get().strip() or None,
+            self.person_id,
             self.entries["Link URL"].get().strip(),
         ]
 

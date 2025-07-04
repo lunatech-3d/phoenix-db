@@ -542,28 +542,23 @@ def add_a_photo():
         messagebox.showinfo("No File Selected", "No file was selected. Please try again.")
 
 
-
 def open_add_menu(event=None):
     """Display a menu of actions to add related information."""
     menu = tk.Menu(window, tearoff=0)
-    
-    cur = connection.cursor()
-    cur.execute("SELECT COUNT(*) FROM Education WHERE person_id=?", (record_id,))
-    if cur.fetchone()[0] == 0:
+    menu.add_command(
+        label="Add Education",
+        command=lambda: open_add_education_window(record_id, connection),
+    )
+    menu.add_command(
+        label="Add Deed",
+        command=lambda: AddDeedDialog(window, record_id),
+    )
+    # Only show Home/Property option if no residence data exists
+    if not has_residence_data(record_id):
         menu.add_command(
-            label="Add Education",
-            command=lambda: open_add_education_window(
-                record_id, connection, lambda: create_education_tab(notebook, record_id)
-            ),
+            label="Add Residence",
+            command=lambda: launch_tab("addresident", str(record_id)),
         )
-
-    cur.execute("SELECT COUNT(*) FROM DeedParties WHERE person_id=?", (record_id,))
-    if cur.fetchone()[0] == 0:
-        menu.add_command(
-            label="Add Deed",
-            command=lambda: AddDeedDialog(window, record_id),
-        )
-    
     if event:
         menu.tk_popup(event.x_root, event.y_root)
     else:
@@ -2594,8 +2589,10 @@ create_narrative_tab(notebook, bio, person_id)
 
 create_family_tab(notebook, person_record[0])
 
-create_residence_tab(notebook, person_record[0])
-
+# Show Home/Property only if residence data exists
+if has_residence_data(person_record[0]):
+    create_residence_tab(notebook, person_record[0])
+    
 create_education_tab(notebook, person_record[0])
 
 create_business_tab(notebook, person_record[0])
