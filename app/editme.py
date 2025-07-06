@@ -545,10 +545,15 @@ def add_a_photo():
 def open_add_menu(event=None):
     """Display a menu of actions to add related information."""
     menu = tk.Menu(window, tearoff=0)
-    menu.add_command(
-        label="Add Education",
-        command=lambda: open_add_education_window(record_id, connection),
-    )
+    
+    # Only show the option to add education when no education
+    # records exist for the person. Once education data exists the
+    # tab will be displayed and this option should disappear.
+    if not has_education_data(record_id):
+        menu.add_command(
+            label="Add Education",
+            command=lambda: open_add_education_window(record_id, connection),
+        )
     menu.add_command(
         label="Add Deed",
         command=lambda: AddDeedDialog(window, record_id),
@@ -2593,7 +2598,9 @@ create_family_tab(notebook, person_record[0])
 if has_residence_data(person_record[0]):
     create_residence_tab(notebook, person_record[0])
     
-create_education_tab(notebook, person_record[0])
+#Display the Education tab only when education records exist
+if has_education_data(person_record[0]):
+    create_education_tab(notebook, person_record[0])
 
 create_business_tab(notebook, person_record[0])
 
