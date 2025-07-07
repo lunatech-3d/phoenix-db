@@ -13,7 +13,7 @@ from app.date_utils import parse_date_input, format_date_for_display, date_sort_
 from app.context_menu import create_context_menu, apply_context_menu_to_all_entries
 from app.person_linkage import person_search_popup
 from app.biz_employees import open_employee_editor
-from app.biz_linkage import open_biz_linkage_popup
+from app.movie.edit_showing import open_edit_showing_form
 
 connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
@@ -51,6 +51,8 @@ class EditBusinessForm:
         self.entries = {}
         self.preceded_by_id_map = {}
         self.succeeded_by_id_map = {}
+        self.location_tab_added = False
+        self.showing_tab_added = False
         
         self.setup_form()
         if biz_id:
@@ -59,6 +61,7 @@ class EditBusinessForm:
             self.load_locations()
             self.load_employees()
             self.load_bizevents()
+            self.load_showings()
         else:
             self.disable_related_sections()
     
@@ -129,9 +132,34 @@ class EditBusinessForm:
             ("external_url", "External URL")
         ]
 
-        # Inside setup_form(self) in EditBusinessForm
+        main = ttk.Frame(self.master)
+        main.pack(fill="both", expand=True)
+        main.columnconfigure(1, weight=1)
 
-        form_frame = ttk.LabelFrame(self.master, text="Business Details")
+        photo_frame = ttk.Frame(main)
+        photo_frame.grid(row=0, column=0, sticky="ns", padx=10, pady=10)
+        ttk.Label(photo_frame, text="(photo)").pack()
+        self.add_info_btn = ttk.Button(photo_frame, text="+", width=3, command=self.open_add_menu)
+        self.add_info_btn.pack(pady=5)
+
+        notebook_container = ttk.Frame(main)
+        notebook_container.grid(row=0, column=1, sticky="nsew")
+        notebook_container.columnconfigure(0, weight=1)
+        notebook_container.rowconfigure(0, weight=1)
+
+        self.notebook = ttk.Notebook(notebook_container)
+        self.notebook.grid(row=0, column=0, sticky="nsew")
+
+        # Tabs
+        self.overview_tab = ttk.Frame(self.notebook)
+        self.people_tab = ttk.Frame(self.notebook)
+        self.locations_tab = ttk.Frame(self.notebook)
+        self.showings_tab = ttk.Frame(self.notebook)
+
+        self.notebook.add(self.overview_tab, text="Overview")
+        self.notebook.add(self.people_tab, text="People")
+
+        form_frame = ttk.LabelFrame(self.overview_tab, text="Business Details")
         form_frame.pack(fill="x", padx=10, pady=10)
 
         # Column 1: Business identity
@@ -189,7 +217,7 @@ class EditBusinessForm:
 
 
         # Tree Section for Owners
-        self.owner_frame = ttk.LabelFrame(self.master, text="Owners")
+        self.owner_frame = ttk.LabelFrame(self.people_tab, text="Business Owners")
         self.owner_frame.pack(fill="both", expand=False, padx=10, pady=5)
 
         #Start of the Tree Sections
@@ -227,7 +255,7 @@ class EditBusinessForm:
         self.owner_del_btn.pack(side="left", padx=5)
         
         # 2- Setup of the Location Tree Section
-        self.location_frame = ttk.LabelFrame(self.master, text="Locations")
+        self.location_frame = ttk.LabelFrame(self.locations_tab, text="Locations")
         self.location_frame.pack(fill="both", expand=False, padx=10, pady=5)
 
 
@@ -257,7 +285,7 @@ class EditBusinessForm:
         self.location_del_btn.pack(side="left", padx=5)
         
         # 3 - Setup of the Employee Tree Section
-        self.employee_frame = ttk.LabelFrame(self.master, text="Employees")
+        self.employee_frame = ttk.LabelFrame(self.people_tab, text="Employees")
         self.employee_frame.pack(fill="both", expand=False, padx=10, pady=5)
 
         self.employee_tree = ttk.Treeview(self.employee_frame, columns=("person_id", "name", "title", "start", "end", "notes"), show="headings", height=5)
@@ -290,7 +318,7 @@ class EditBusinessForm:
         self.employee_del_btn.pack(side="left", padx=5)
 
         # 4 - Setup of the Business Events Section
-        self.bizevents_frame = ttk.LabelFrame(self.master, text="Business Events")
+        self.bizevents_frame = ttk.LabelFrame(self.people_tab, text="Business Events")
         self.bizevents_frame.pack(fill="both", expand=False, padx=10, pady=5)
 
         self.bizevents_tree = ttk.Treeview(self.bizevents_frame, columns=("event_id", "event_type", "date_range", "person", "description", "link_url"), show="headings", height=5)
@@ -323,6 +351,30 @@ class EditBusinessForm:
         self.event_del_btn = ttk.Button(bizevents_btns, text="Delete", command=self.delete_bizevent)
         self.event_del_btn.pack(side="left", padx=5)
   
+        # --- Movie Showings Section ---
+        self.showings_frame = ttk.LabelFrame(self.showings_tab, text="Showings")
+        self.showings_frame.pack(fill="both", expand=False, padx=10, pady=5)
+
+        show_cols = ("showing_id", "title", "start", "end", "format", "event")
+        self.showing_tree = ttk.Treeview(self.showings_frame, columns=show_cols, show="headings", height=5)
+        for col in show_cols:
+            self.showing_tree.heading(col, text=col.title(), command=lambda c=col: self.sort_showing_tree_by_column(c))
+            width = 0 if col == "showing_id" else 100
+            if col == "title":
+                width = 200
+            self.showing_tree.column(col, width=width, anchor="w", stretch=(col != "showing_id"))
+        self.showing_tree.pack(side="top", fill="x", expand=False, padx=5)
+        self.showing_tree.bind("<Double-1>", self.on_showing_double_click)
+
+        show_btns = ttk.Frame(self.showings_frame)
+        show_btns.pack(side="bottom", fill="x")
+        self.showing_add_btn = ttk.Button(show_btns, text="Add", command=self.add_showing)
+        self.showing_add_btn.pack(side="left", padx=5)
+        self.showing_edit_btn = ttk.Button(show_btns, text="Edit", command=self.edit_showing)
+        self.showing_edit_btn.pack(side="left", padx=5)
+        self.showing_del_btn = ttk.Button(show_btns, text="Delete", command=self.delete_showing)
+        self.showing_del_btn.pack(side="left", padx=5)
+
         apply_context_menu_to_all_entries(self.master)
 
     def disable_related_sections(self):
@@ -331,6 +383,7 @@ class EditBusinessForm:
             self.location_tree, self.location_add_btn, self.location_edit_btn, self.location_del_btn,
             self.employee_tree, self.employee_add_btn, self.employee_edit_btn, self.employee_del_btn,
             self.bizevents_tree, self.event_add_btn, self.event_edit_btn, self.event_del_btn,
+            self.showing_tree, self.showing_add_btn, self.showing_edit_btn, self.showing_del_btn,
         ]
         for w in widgets:
             try:
@@ -344,6 +397,7 @@ class EditBusinessForm:
             self.location_tree, self.location_add_btn, self.location_edit_btn, self.location_del_btn,
             self.employee_tree, self.employee_add_btn, self.employee_edit_btn, self.employee_del_btn,
             self.bizevents_tree, self.event_add_btn, self.event_edit_btn, self.event_del_btn,
+            self.showing_tree, self.showing_add_btn, self.showing_edit_btn, self.showing_del_btn,
         ]
         for w in widgets:
             try:
@@ -593,6 +647,13 @@ class EditBusinessForm:
 
         rows = self.cursor.fetchall()
 
+        if rows and not self.location_tab_added:
+            self.notebook.insert(2, self.locations_tab, text="Locations")
+            self.location_tab_added = True
+        elif not rows and self.location_tab_added:
+            self.notebook.forget(self.locations_tab)
+            self.location_tab_added = False
+
         # Sort by raw start_date (index 1)
         sorted_rows = sorted(rows, key=lambda r: date_sort_key(r[1]))
 
@@ -606,6 +667,8 @@ class EditBusinessForm:
                 address, start_display, end_display, notes, url
             ))
         
+        self.update_add_menu_state()
+
     def add_location(self):
         self.open_location_editor()
 
@@ -1302,25 +1365,93 @@ class EditBusinessForm:
             else:
                 messagebox.showinfo("No URL", "No valid link provided for this event.")
 
-        def sort_bizevents_tree_by_column(self, col):
-            if not hasattr(self, '_bizevent_sort_state'):
-                self._bizevent_sort_state = {}
+    def sort_showing_tree_by_column(self, col):
+        if not hasattr(self, '_showing_sort_state'):
+            self._showing_sort_state = {}
+        reverse = self._showing_sort_state.get(col, False)
+        items = [(self.showing_tree.set(k, col), k) for k in self.showing_tree.get_children('')]
+        items.sort(key=lambda item: item[0].lower() if isinstance(item[0], str) else item[0], reverse=reverse)
+        for index, (_, k) in enumerate(items):
+            self.showing_tree.move(k, '', index)
+        self._showing_sort_state[col] = not reverse
 
-            reverse = self._bizevent_sort_state.get(col, False)
+    def load_showings(self):
+        self.showing_tree.delete(*self.showing_tree.get_children())
+        self.cursor.execute(
+            """SELECT s.showing_id, m.title, s.start_date, s.end_date, s.format, s.special_event
+               FROM MovieShowings s JOIN Movies m ON s.movie_id=m.movie_id
+               WHERE s.biz_id=? ORDER BY s.start_date""",
+            (self.biz_id,)
+        )
+        rows = self.cursor.fetchall()
+  
+        if rows and not self.showing_tab_added:
+            index = 3 if self.location_tab_added else 2
+            self.notebook.insert(index, self.showings_tab, text="Showings")
+            self.showing_tab_added = True
+        elif not rows and self.showing_tab_added:
+            self.notebook.forget(self.showings_tab)
+            self.showing_tab_added = False
 
-            items = [(self.bizevents_tree.set(k, col), k) for k in self.bizevents_tree.get_children('')]
+        for row in rows:
+            self.showing_tree.insert('', 'end', values=row)
 
-            if col.lower() in ("date", "date_range", "start"):
-                items.sort(key=lambda item: date_sort_key(item[0].split("–")[0].strip()), reverse=reverse)
-            else:
-                items.sort(key=lambda item: item[0].lower() if isinstance(item[0], str) else item[0], reverse=reverse)
-
-            for index, (_, k) in enumerate(items):
-                self.bizevents_tree.move(k, '', index)
-
-            self._bizevent_sort_state[col] = not reverse
+        self.update_add_menu_state()
 
     
+    def add_showing(self):
+        win = open_edit_showing_form(parent=self.master, biz_id=self.biz_id)
+        if win:
+            self.master.wait_window(win)
+        self.load_showings()
+
+    def edit_showing(self, event=None):
+        sel = self.showing_tree.selection()
+        if not sel:
+            return
+        showing_id = self.showing_tree.item(sel[0])['values'][0]
+        win = open_edit_showing_form(showing_id, parent=self.master)
+        if win:
+            self.master.wait_window(win)
+        self.load_showings()
+
+    def delete_showing(self):
+        sel = self.showing_tree.selection()
+        if not sel:
+            return
+        showing_id = self.showing_tree.item(sel[0])['values'][0]
+        if not messagebox.askyesno("Confirm Delete", "Delete selected showing?"):
+            return
+        try:
+            self.cursor.execute("DELETE FROM MovieShowings WHERE showing_id=?", (showing_id,))
+            self.conn.commit()
+            self.load_showings()
+        except Exception as e:
+            messagebox.showerror("Delete Failed", str(e))
+
+    
+    def on_showing_double_click(self, event):
+        self.edit_showing()
+
+    
+    def sort_bizevents_tree_by_column(self, col):
+        if not hasattr(self, '_bizevent_sort_state'):
+            self._bizevent_sort_state = {}
+
+        reverse = self._bizevent_sort_state.get(col, False)
+
+        items = [(self.bizevents_tree.set(k, col), k) for k in self.bizevents_tree.get_children('')]
+
+        if col.lower() in ("date", "date_range", "start"):
+            items.sort(key=lambda item: date_sort_key(item[0].split("–")[0].strip()), reverse=reverse)
+        else:
+            items.sort(key=lambda item: item[0].lower() if isinstance(item[0], str) else item[0], reverse=reverse)
+
+        for index, (_, k) in enumerate(items):
+            self.bizevents_tree.move(k, '', index)
+
+        self._bizevent_sort_state[col] = not reverse
+
     def load_business_dropdowns(self):
         # Clear old values
         self.entries['preceded_by']['values'] = []
@@ -1328,6 +1459,25 @@ class EditBusinessForm:
         self.preceded_by_id_map.clear()
         self.succeeded_by_id_map.clear()
 
+    def open_add_menu(self, event=None):
+        menu = tk.Menu(self.master, tearoff=0)
+        if not self.location_tab_added:
+            menu.add_command(label="Add Location", command=self.add_location)
+        if not self.showing_tab_added:
+            menu.add_command(label="Add Showing", command=self.add_showing)
+        if menu.index("end") is None:
+            return
+        if event:
+            menu.tk_popup(event.x_root, event.y_root)
+        else:
+            x = self.add_info_btn.winfo_rootx()
+            y = self.add_info_btn.winfo_rooty() + self.add_info_btn.winfo_height()
+            menu.tk_popup(x, y)
+
+    def update_add_menu_state(self):
+        # Placeholder to refresh menu; method exists for symmetry
+        pass
+    
         # Query all other businesses
         self.cursor.execute("""
             SELECT biz_id, biz_name, start_date, end_date
