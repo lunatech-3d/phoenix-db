@@ -648,7 +648,11 @@ class EditBusinessForm:
         rows = self.cursor.fetchall()
 
         if rows and not self.location_tab_added:
-            self.notebook.insert(2, self.locations_tab, text="Locations")
+            tab_count = len(self.notebook.tabs())
+            if 2 >= tab_count:
+                self.notebook.add(self.locations_tab, text="Locations")
+            else:
+                self.notebook.insert(2, self.locations_tab, text="Locations")
             self.location_tab_added = True
         elif not rows and self.location_tab_added:
             self.notebook.forget(self.locations_tab)
@@ -777,21 +781,29 @@ class EditBusinessForm:
                     original_display_start = self.location_existing[1]
                     original_start_date, _ = parse_date_input(original_display_start)
 
-                    self.cursor.execute("""
+                    update_query = """
                         UPDATE BizLocHistory
                         SET address_id = ?,
                             start_date = ?, start_date_precision = ?,
                             end_date = ?, end_date_precision = ?,
                             notes = ?, url = ?
                         WHERE biz_id = ? AND address_id = ?
-                    """, (
-                        address_id,              # new address
+                    """
+                    params = [
+                        address_id,
                         start_date, start_prec,
                         end_date, end_prec,
                         notes, url,
-                        self.biz_id,             # old keys for matching
-                        original_address_id
-                    ))
+                        self.biz_id,
+                        original_address_id,
+                    ]
+                    if original_start_date is not None:
+                        update_query += " AND start_date = ?"
+                        params.append(original_start_date)
+                    else:
+                        update_query += " AND start_date IS NULL"
+
+                    self.cursor.execute(update_query, params)
                 else:
                     self.cursor.execute("""
                         INSERT INTO BizLocHistory (
@@ -1387,7 +1399,11 @@ class EditBusinessForm:
   
         if rows and not self.showing_tab_added:
             index = 3 if self.location_tab_added else 2
-            self.notebook.insert(index, self.showings_tab, text="Showings")
+            tab_count = len(self.notebook.tabs())
+            if index >= tab_count:
+                self.notebook.add(self.showings_tab, text="Showings")
+            else:
+                self.notebook.insert(index, self.showings_tab, text="Showings")
             self.showing_tab_added = True
         elif not rows and self.showing_tab_added:
             self.notebook.forget(self.showings_tab)
@@ -1454,8 +1470,8 @@ class EditBusinessForm:
 
     def load_business_dropdowns(self):
         # Clear old values
-        self.entries['preceded_by']['values'] = []
-        self.entries['succeeded_by']['values'] = []
+        self.relationship_dropdowns['preceded_by']['values'] = []
+        self.relationship_dropdowns['succeeded_by']['values'] = []
         self.preceded_by_id_map.clear()
         self.succeeded_by_id_map.clear()
 
@@ -1507,8 +1523,8 @@ class EditBusinessForm:
             self.preceded_by_id_map[label] = biz_id
             self.succeeded_by_id_map[label] = biz_id
 
-        self.entries['preceded_by']['values'] = preceded_list
-        self.entries['succeeded_by']['values'] = succeeded_list
+        self.relationship_dropdowns['preceded_by']['values'] = preceded_list
+        self.relationship_dropdowns['succeeded_by']['values'] = succeeded_list
 
 
     def load_data(self):
