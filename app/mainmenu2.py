@@ -427,6 +427,9 @@ def open_business_management():
 def open_inst_management():
     subprocess.Popen([sys.executable, "-m", "app.institution"])
 
+def open_church_management():
+    subprocess.Popen([sys.executable, "-m", "app.church.church"])
+
 def open_gov_management():
     subprocess.Popen([sys.executable, "-m", "app.gov"])
 
@@ -463,6 +466,7 @@ file_menu.add_command(label="Sources Table", command=view_sources)
 file_menu.add_command(label="Address Table", command=view_addresses)
 file_menu.add_command(label="Business Management", command=open_business_management)
 file_menu.add_command(label="Institution Management", command=open_inst_management)
+file_menu.add_command(label="Church Management", command=open_church_management)
 file_menu.add_command(label="Government Management", command=open_gov_management)
 file_menu.add_command(label="Event Management", command=launch_event_editor)
 file_menu.add_command(label="Resident Table", command=view_residents)

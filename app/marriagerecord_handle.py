@@ -5,6 +5,7 @@ import sys
 
 #Local Imports
 from app.config import DB_PATH, PATHS
+from app.context_menu import create_context_menu
 from app.person_search import search_people as lookup_people
 
 # Connect to the database

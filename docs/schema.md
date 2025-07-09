@@ -612,6 +612,11 @@
 | `m_location` | TEXT | No | No |  |
 | `m_note` | TEXT | No | No |  |
 | `m_link` | TEXT | No | No |  |
+| `church_id` | INTEGER | No | No |  |
+| `officiant_id` | INTEGER | No | No |  |
+| `officiant_notes` | TEXT | No | No |  |
+| `curator_summary` | TEXT | No | No |  |
+| `event_context_tags` | TEXT | No | No |  |
 
 ## 🧩 Table: `Mayor`
 > No description provided yet.
