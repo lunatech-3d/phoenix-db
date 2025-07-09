@@ -74,6 +74,21 @@ CREATE TABLE Church_Staff (
     FOREIGN KEY (person_id) REFERENCES People(id)
 );
 
+-- Table: ChurchLocHistory
+CREATE TABLE ChurchLocHistory (
+    church_id INTEGER NOT NULL,
+    address_id INTEGER NOT NULL,
+    start_date TEXT,
+    start_date_precision TEXT,
+    end_date TEXT,
+    end_date_precision TEXT,
+    notes TEXT,
+    url TEXT,
+    PRIMARY KEY (church_id, address_id, start_date),
+    FOREIGN KEY (church_id) REFERENCES Church(church_id),
+    FOREIGN KEY (address_id) REFERENCES Address(address_id)
+);    
+
 CREATE TABLE Baptism (
     baptism_id INTEGER PRIMARY KEY,
     person_id INTEGER NOT NULL,

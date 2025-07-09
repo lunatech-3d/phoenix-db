@@ -204,6 +204,16 @@ def get_census_fields():
             ("City", ""),
             ("State", ""),
             ("Attended School", "Y/N")
+        ],
+        '1950': [
+            ("Age", "Required"),
+            ("Sex", "M/F"),
+            ("Race", ""),
+            ("Relation to Head", ""),
+            ("Birth Place", ""),
+            ("Occupation", ""),
+            ("Dwelling No.", "Required"),
+            ("Household No.", "Required")
         ]
     }
 
