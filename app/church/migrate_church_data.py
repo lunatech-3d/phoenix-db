@@ -83,7 +83,7 @@ def migrate():
             """
             SELECT event_type, event_date, event_date_precision,
                    end_date, end_date_precision, description,
-                   person_id, source_id, link_url
+                   original_text, person_id, source_id, link_url
               FROM Inst_Event
              WHERE inst_id = ?
             """,
@@ -95,8 +95,8 @@ def migrate():
                 INSERT INTO Church_Event (
                     church_id, event_type, event_date, event_date_precision,
                     end_date, end_date_precision, description,
-                    person_id, source_id, link_url
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    original_text, person_id, source_id, link_url
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (inst_id, *ev),
             )

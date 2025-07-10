@@ -146,6 +146,12 @@ class ChurchForm:
         self.staff_tree.column("id", width=0, stretch=False)
         self.staff_tree.pack(fill="both", expand=True, padx=5, pady=5)
 
+        btn_frame = ttk.Frame(self.staff_tab)
+        btn_frame.pack(pady=5)
+        ttk.Button(btn_frame, text="Add", command=self.add_staff).pack(side="left", padx=2)
+        ttk.Button(btn_frame, text="Edit", command=self.edit_staff).pack(side="left", padx=2)
+        ttk.Button(btn_frame, text="Delete", command=self.delete_staff).pack(side="left", padx=2)
+
     def setup_locations(self):
         cols = ("address", "start", "end", "notes", "url")
         self.location_tree = ttk.Treeview(self.locations_tab, columns=cols, show="headings", height=3)
@@ -179,6 +185,12 @@ class ChurchForm:
         self.baptism_tree.column("id", width=0, stretch=False)
         self.baptism_tree.pack(fill="both", expand=True, padx=5, pady=5)
 
+        btn_frame = ttk.Frame(self.baptisms_tab)
+        btn_frame.pack(pady=5)
+        ttk.Button(btn_frame, text="Add", command=self.add_baptism).pack(side="left", padx=2)
+        ttk.Button(btn_frame, text="Edit", command=self.edit_baptism).pack(side="left", padx=2)
+        ttk.Button(btn_frame, text="Delete", command=self.delete_baptism).pack(side="left", padx=2)
+
     def setup_funerals(self):
         self.funeral_tree = ttk.Treeview(self.funerals_tab, columns=("id", "person", "date"), show="headings")
         for col in ("person", "date"):
@@ -189,6 +201,13 @@ class ChurchForm:
             )
         self.funeral_tree.column("id", width=0, stretch=False)
         self.funeral_tree.pack(fill="both", expand=True, padx=5, pady=5)
+
+        btn_frame = ttk.Frame(self.funerals_tab)
+        btn_frame.pack(pady=5)
+        ttk.Button(btn_frame, text="Add", command=self.add_funeral).pack(side="left", padx=2)
+        ttk.Button(btn_frame, text="Edit", command=self.edit_funeral).pack(side="left", padx=2)
+        ttk.Button(btn_frame, text="Delete", command=self.delete_funeral).pack(side="left", padx=2)
+
 
     # --- Data Loading ---
     def load_data(self):
@@ -250,14 +269,14 @@ class ChurchForm:
         if not self.church_id:
             messagebox.showerror("Save First", "Save church before adding events")
             return
-        church_event.edit_event(self.master, self.church_id, refresh=self.load_events)
+        church_events.edit_event(self.master, self.church_id, refresh=self.load_events)
 
     def edit_event(self):
         sel = self.event_tree.selection()
         if not sel:
             return
         event_id = self.event_tree.item(sel[0])["values"][0]
-        church_event.edit_event(self.master, self.church_id, event_id=event_id, refresh=self.load_events)
+        church_events.edit_event(self.master, self.church_id, event_id=event_id, refresh=self.load_events)
 
     def delete_event(self):
         sel = self.event_tree.selection()
@@ -323,6 +342,31 @@ class ChurchForm:
                 values=(sid, pname, title or "", start_disp, end_disp, notes or ""),
             )
 
+    def add_staff(self):
+        if not self.church_id:
+            messagebox.showerror("Save First", "Save church before adding staff")
+            return
+        church_staff.edit_staff(self.master, self.church_id, refresh=self.load_staff)
+
+    def edit_staff(self):
+        sel = self.staff_tree.selection()
+        if not sel:
+            return
+        staff_id = self.staff_tree.item(sel[0])["values"][0]
+        church_staff.edit_staff(
+            self.master, self.church_id, staff_id=staff_id, refresh=self.load_staff
+        )
+
+    def delete_staff(self):
+        sel = self.staff_tree.selection()
+        if not sel:
+            return
+        staff_id = self.staff_tree.item(sel[0])["values"][0]
+        if messagebox.askyesno("Delete", "Delete selected staff record?"):
+            self.cursor.execute("DELETE FROM Church_Staff WHERE church_staff_id=?", (staff_id,))
+            self.conn.commit()
+            self.load_staff()
+
     # --- Baptisms ---
     def load_baptisms(self):
         if not self.church_id:
@@ -338,6 +382,29 @@ class ChurchForm:
             bid, pname, date, _ = row
             self.baptism_tree.insert("", "end", values=(bid, pname, date or ""))
 
+    def add_baptism(self):
+        if not self.church_id:
+            messagebox.showerror("Save First", "Save church before adding baptisms")
+            return
+        baptisms.edit_baptism(self.master, self.church_id, refresh=self.load_baptisms)
+
+    def edit_baptism(self):
+        sel = self.baptism_tree.selection()
+        if not sel:
+            return
+        baptism_id = self.baptism_tree.item(sel[0])["values"][0]
+        baptisms.edit_baptism(self.master, self.church_id, baptism_id=baptism_id, refresh=self.load_baptisms)
+
+    def delete_baptism(self):
+        sel = self.baptism_tree.selection()
+        if not sel:
+            return
+        baptism_id = self.baptism_tree.item(sel[0])["values"][0]
+        if messagebox.askyesno("Delete", "Delete selected baptism?"):
+            self.cursor.execute("DELETE FROM Baptism WHERE baptism_id=?", (baptism_id,))
+            self.conn.commit()
+            self.load_baptisms()
+
     # --- Funerals ---
     def load_funerals(self):
         if not self.church_id:
@@ -352,6 +419,31 @@ class ChurchForm:
         for row in self.cursor.fetchall():
             fid, pname, date, _ = row
             self.funeral_tree.insert("", "end", values=(fid, pname, date or ""))
+
+    def add_funeral(self):
+        if not self.church_id:
+            messagebox.showerror("Save First", "Save church before adding funerals")
+            return
+        funerals.edit_funeral(self.master, self.church_id, refresh=self.load_funerals)
+
+    def edit_funeral(self):
+        sel = self.funeral_tree.selection()
+        if not sel:
+            return
+        funeral_id = self.funeral_tree.item(sel[0])["values"][0]
+        funerals.edit_funeral(self.master, self.church_id, funeral_id=funeral_id, refresh=self.load_funerals)
+
+    def delete_funeral(self):
+        sel = self.funeral_tree.selection()
+        if not sel:
+            return
+        funeral_id = self.funeral_tree.item(sel[0])["values"][0]
+        if messagebox.askyesno("Delete", "Delete selected funeral?"):
+            self.cursor.execute("DELETE FROM Funeral WHERE funeral_id=?", (funeral_id,))
+            self.conn.commit()
+            self.load_funerals()
+
+
 
     # --- Location Methods ---
     def load_locations(self):

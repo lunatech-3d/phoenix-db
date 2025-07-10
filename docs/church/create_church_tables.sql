@@ -26,6 +26,7 @@ CREATE TABLE Church_Event (
     end_date TEXT,
     end_date_precision TEXT,
     description TEXT,
+    original_text TEXT,
     person_id INTEGER,
     source_id INTEGER,
     link_url TEXT,
