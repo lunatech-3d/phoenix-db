@@ -98,9 +98,21 @@ class ChurchForm:
 
     def setup_events(self):
         self.event_tree = ttk.Treeview(self.events_tab, columns=("id", "type", "date", "desc"), show="headings")
-        self.event_tree.heading("type", text="Type")
-        self.event_tree.heading("date", text="Date")
-        self.event_tree.heading("desc", text="Description")
+        self.event_tree.heading(
+            "type",
+            text="Type",
+            command=lambda c="type": self.sort_event_tree_by_column(c),
+        )
+        self.event_tree.heading(
+            "date",
+            text="Date",
+            command=lambda c="date": self.sort_event_tree_by_column(c),
+        )
+        self.event_tree.heading(
+            "desc",
+            text="Description",
+            command=lambda c="desc": self.sort_event_tree_by_column(c),
+        )
         self.event_tree.column("id", width=0, stretch=False)
         self.event_tree.pack(fill="both", expand=True, padx=5, pady=5)
 
@@ -113,7 +125,11 @@ class ChurchForm:
     def setup_groups(self):
         self.group_tree = ttk.Treeview(self.groups_tab, columns=("id", "name", "type"), show="headings")
         for col in ("name", "type"):
-            self.group_tree.heading(col, text=col.title())
+            self.group_tree.heading(
+                    col,
+                    text=col.title(),
+                    command=lambda c=col: self.sort_group_tree_by_column(c),
+            )
         self.group_tree.column("id", width=0, stretch=False)
         self.group_tree.pack(fill="both", expand=True, padx=5, pady=5)
 
@@ -155,14 +171,22 @@ class ChurchForm:
     def setup_baptisms(self):
         self.baptism_tree = ttk.Treeview(self.baptisms_tab, columns=("id", "person", "date"), show="headings")
         for col in ("person", "date"):
-            self.baptism_tree.heading(col, text=col.title())
+            self.baptism_tree.heading(
+                col,
+                text=col.title(),
+                command=lambda c=col: self.sort_baptism_tree_by_column(c),
+            )
         self.baptism_tree.column("id", width=0, stretch=False)
         self.baptism_tree.pack(fill="both", expand=True, padx=5, pady=5)
 
     def setup_funerals(self):
         self.funeral_tree = ttk.Treeview(self.funerals_tab, columns=("id", "person", "date"), show="headings")
         for col in ("person", "date"):
-            self.funeral_tree.heading(col, text=col.title())
+            self.funeral_tree.heading(
+                col,
+                text=col.title(),
+                command=lambda c=col: self.sort_funeral_tree_by_column(c),
+            )
         self.funeral_tree.column("id", width=0, stretch=False)
         self.funeral_tree.pack(fill="both", expand=True, padx=5, pady=5)
 
@@ -592,3 +616,84 @@ class ChurchForm:
                 webbrowser.open(url, new=2)
             else:
                 messagebox.showinfo("No URL", "No valid link provided.")
+
+    def sort_event_tree_by_column(self, col):
+        if not hasattr(self, "_event_sort_state"):
+            self._event_sort_state = {}
+
+        reverse = self._event_sort_state.get(col, False)
+        items = [(self.event_tree.set(k, col), k) for k in self.event_tree.get_children("")]
+
+        if col == "date":
+            items.sort(key=lambda item: date_sort_key(item[0]), reverse=reverse)
+        else:
+            items.sort(key=lambda item: item[0].lower() if isinstance(item[0], str) else item[0], reverse=reverse)
+
+        for index, (_, k) in enumerate(items):
+            self.event_tree.move(k, "", index)
+
+        self._event_sort_state[col] = not reverse
+
+    def sort_group_tree_by_column(self, col):
+        if not hasattr(self, "_group_sort_state"):
+            self._group_sort_state = {}
+
+        reverse = self._group_sort_state.get(col, False)
+        items = [(self.group_tree.set(k, col), k) for k in self.group_tree.get_children("")]
+        items.sort(key=lambda item: item[0].lower() if isinstance(item[0], str) else item[0], reverse=reverse)
+
+        for index, (_, k) in enumerate(items):
+            self.group_tree.move(k, "", index)
+
+        self._group_sort_state[col] = not reverse
+
+    def sort_staff_tree_by_column(self, col):
+        if not hasattr(self, "_staff_sort_state"):
+            self._staff_sort_state = {}
+
+        reverse = self._staff_sort_state.get(col, False)
+        items = [(self.staff_tree.set(k, col), k) for k in self.staff_tree.get_children("")]
+
+        if col in ("start", "end"):
+            items.sort(key=lambda item: date_sort_key(item[0]), reverse=reverse)
+        else:
+            items.sort(key=lambda item: item[0].lower() if isinstance(item[0], str) else item[0], reverse=reverse)
+
+        for index, (_, k) in enumerate(items):
+            self.staff_tree.move(k, "", index)
+
+        self._staff_sort_state[col] = not reverse
+
+    def sort_baptism_tree_by_column(self, col):
+        if not hasattr(self, "_baptism_sort_state"):
+            self._baptism_sort_state = {}
+
+        reverse = self._baptism_sort_state.get(col, False)
+        items = [(self.baptism_tree.set(k, col), k) for k in self.baptism_tree.get_children("")]
+
+        if col == "date":
+            items.sort(key=lambda item: date_sort_key(item[0]), reverse=reverse)
+        else:
+            items.sort(key=lambda item: item[0].lower() if isinstance(item[0], str) else item[0], reverse=reverse)
+
+        for index, (_, k) in enumerate(items):
+            self.baptism_tree.move(k, "", index)
+
+        self._baptism_sort_state[col] = not reverse
+
+    def sort_funeral_tree_by_column(self, col):
+        if not hasattr(self, "_funeral_sort_state"):
+            self._funeral_sort_state = {}
+
+        reverse = self._funeral_sort_state.get(col, False)
+        items = [(self.funeral_tree.set(k, col), k) for k in self.funeral_tree.get_children("")]
+
+        if col == "date":
+            items.sort(key=lambda item: date_sort_key(item[0]), reverse=reverse)
+        else:
+            items.sort(key=lambda item: item[0].lower() if isinstance(item[0], str) else item[0], reverse=reverse)
+
+        for index, (_, k) in enumerate(items):
+            self.funeral_tree.move(k, "", index)
+
+        self._funeral_sort_state[col] = not reverse
