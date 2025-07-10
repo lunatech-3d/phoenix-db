@@ -330,265 +330,265 @@ class ChurchForm:
             self.funeral_tree.insert("", "end", values=(fid, pname, date or ""))
 
     # --- Location Methods ---
-        def load_locations(self):
-            if not self.church_id:
-                return
-            self.location_tree.delete(*self.location_tree.get_children())
-            self.cursor.execute(
-                """SELECT a.address, l.start_date, l.start_date_precision,
-                           l.end_date, l.end_date_precision, l.notes, l.url
-                       FROM ChurchLocHistory l
-                       JOIN Address a ON l.address_id = a.address_id
-                       WHERE l.church_id=?""",
-                (self.church_id,),
+    def load_locations(self):
+        if not self.church_id:
+            return
+        self.location_tree.delete(*self.location_tree.get_children())
+        self.cursor.execute(
+            """SELECT a.address, l.start_date, l.start_date_precision,
+                       l.end_date, l.end_date_precision, l.notes, l.url
+                   FROM ChurchLocHistory l
+                   JOIN Address a ON l.address_id = a.address_id
+                   WHERE l.church_id=?""",
+            (self.church_id,),
+        )
+        rows = self.cursor.fetchall()
+        sorted_rows = sorted(rows, key=lambda r: date_sort_key(r[1]))
+        for row in sorted_rows:
+            address, sdate, sprec, edate, eprec, notes, url = row
+            start_disp = format_date_for_display(sdate, sprec) if sdate else ""
+            end_disp = format_date_for_display(edate, eprec) if edate else ""
+            self.location_tree.insert(
+                "",
+                "end",
+                values=(address, start_disp, end_disp, notes or "", url or ""),
             )
-            rows = self.cursor.fetchall()
-            sorted_rows = sorted(rows, key=lambda r: date_sort_key(r[1]))
-            for row in sorted_rows:
-                address, sdate, sprec, edate, eprec, notes, url = row
-                start_disp = format_date_for_display(sdate, sprec) if sdate else ""
-                end_disp = format_date_for_display(edate, eprec) if edate else ""
-                self.location_tree.insert(
-                    "",
-                    "end",
-                    values=(address, start_disp, end_disp, notes or "", url or ""),
-                )
 
-        def add_location(self):
-            self.open_location_editor()
+    def add_location(self):
+        self.open_location_editor()
 
-        def edit_location(self):
-            sel = self.location_tree.selection()
-            if not sel:
-                return
-            values = self.location_tree.item(sel[0])["values"]
-            self.open_location_editor(existing=values)
+    def edit_location(self):
+        sel = self.location_tree.selection()
+        if not sel:
+            return
+        values = self.location_tree.item(sel[0])["values"]
+        self.open_location_editor(existing=values)
 
-        def open_location_editor(self, existing=None):
-            self.location_win = tk.Toplevel(self.master)
-            self.location_win.title("Edit Location" if existing else "Add Location")
+    def open_location_editor(self, existing=None):
+        self.location_win = tk.Toplevel(self.master)
+        self.location_win.title("Edit Location" if existing else "Add Location")
 
-            fields = ["Address", "Start Date", "End Date", "Notes", "URL"]
-            self.location_entries = {}
-            self.location_existing = existing
+        fields = ["Address", "Start Date", "End Date", "Notes", "URL"]
+        self.location_entries = {}
+        self.location_existing = existing
 
-            for idx, label in enumerate(fields):
-                ttk.Label(self.location_win, text=label + ":").grid(row=idx, column=0, padx=5, pady=3, sticky="e")
+        for idx, label in enumerate(fields):
+            ttk.Label(self.location_win, text=label + ":").grid(row=idx, column=0, padx=5, pady=3, sticky="e")
 
-                if label == "Address":
-                    address_frame = ttk.Frame(self.location_win)
-                    address_frame.grid(row=idx, column=1, padx=5, pady=3, sticky="w")
+            if label == "Address":
+                address_frame = ttk.Frame(self.location_win)
+                address_frame.grid(row=idx, column=1, padx=5, pady=3, sticky="w")
 
-                    search_var = tk.StringVar(master=self.location_win)
-                    search_entry = ttk.Entry(address_frame, textvariable=search_var, width=30)
-                    search_entry.pack(side="left", padx=(0, 5))
+                search_var = tk.StringVar(master=self.location_win)
+                search_entry = ttk.Entry(address_frame, textvariable=search_var, width=30)
+                search_entry.pack(side="left", padx=(0, 5))
 
-                    self.cursor.execute("SELECT address_id, address FROM Address ORDER BY address")
-                    address_rows = self.cursor.fetchall()
-                    address_list = [row[1] for row in address_rows]
-                    self.address_lookup = {row[1]: row[0] for row in address_rows}
+                self.cursor.execute("SELECT address_id, address FROM Address ORDER BY address")
+                address_rows = self.cursor.fetchall()
+                address_list = [row[1] for row in address_rows]
+                self.address_lookup = {row[1]: row[0] for row in address_rows}
 
-                    address_combo = ttk.Combobox(address_frame, width=40, state="readonly")
-                    address_combo['values'] = address_list
-                    address_combo.pack(side="left")
-                    self.location_entries["Address"] = address_combo
+                address_combo = ttk.Combobox(address_frame, width=40, state="readonly")
+                address_combo['values'] = address_list
+                address_combo.pack(side="left")
+                self.location_entries["Address"] = address_combo
 
-                    def filter_addresses():
-                        term = search_var.get().lower()
-                        filtered = [a for a in address_list if term in a.lower()]
-                        address_combo['values'] = filtered
+                def filter_addresses():
+                    term = search_var.get().lower()
+                    filtered = [a for a in address_list if term in a.lower()]
+                    address_combo['values'] = filtered
 
-                    ttk.Button(address_frame, text="Search", command=filter_addresses).pack(side="left", padx=(5, 0))
+                ttk.Button(address_frame, text="Search", command=filter_addresses).pack(side="left", padx=(5, 0))
+            else:
+                entry = ttk.Entry(self.location_win, width=50)
+                entry.grid(row=idx, column=1, padx=5, pady=3)
+                self.location_entries[label] = entry
+
+        if existing:
+            for key, value in zip(fields, existing):
+                widget = self.location_entries.get(key)
+                if not widget:
+                    continue
+                if isinstance(widget, ttk.Combobox):
+                    widget.set(value)
                 else:
-                    entry = ttk.Entry(self.location_win, width=50)
-                    entry.grid(row=idx, column=1, padx=5, pady=3)
-                    self.location_entries[label] = entry
+                    widget.delete(0, tk.END)
+                    widget.insert(0, value)
 
-            if existing:
-                for key, value in zip(fields, existing):
-                    widget = self.location_entries.get(key)
-                    if not widget:
-                        continue
-                    if isinstance(widget, ttk.Combobox):
-                        widget.set(value)
-                    else:
-                        widget.delete(0, tk.END)
-                        widget.insert(0, value)
-
-            def save_location():
-                address_widget = self.location_entries.get("Address")
-                if not address_widget:
-                    messagebox.showerror("Error", "Address field is missing.")
-                    return
-
-                address = address_widget.get().strip()
-                if address not in address_widget['values']:
-                    messagebox.showerror("Invalid Address", "The address you selected is not in the database.")
-                    return
-
-                address_id = self.address_lookup.get(address)
-                if not address_id:
-                    messagebox.showerror("Invalid Address", "The address is not recognized.")
-                    return
-
-                try:
-                    start_input = self.location_entries["Start Date"].get().strip()
-                    start_date, start_prec = parse_date_input(start_input) if start_input else (None, None)
-
-                    end_input = self.location_entries["End Date"].get().strip()
-                    end_date, end_prec = parse_date_input(end_input) if end_input else (None, None)
-                except ValueError as e:
-                    messagebox.showerror("Date Error", str(e))
-                    return
-
-                notes = self.location_entries["Notes"].get().strip()
-                url = self.location_entries["URL"].get().strip()
-
-                try:
-                    if self.location_existing:
-                        original_address = self.location_existing[0]
-                        self.cursor.execute(
-                            "SELECT address_id FROM Address WHERE address = ? LIMIT 1",
-                            (original_address,),
-                        )
-                        result = self.cursor.fetchone()
-                        if not result:
-                            messagebox.showerror("Error", "Original address not found.")
-                            return
-                        original_address_id = result[0]
-                        original_display_start = self.location_existing[1]
-                        original_start_date, _ = parse_date_input(original_display_start)
-
-                        self.cursor.execute(
-                            """UPDATE ChurchLocHistory
-                               SET address_id = ?,
-                                   start_date = ?, start_date_precision = ?,
-                                   end_date = ?, end_date_precision = ?,
-                                   notes = ?, url = ?
-                             WHERE church_id = ? AND address_id = ?""",
-                            (
-                                address_id,
-                                start_date,
-                                start_prec,
-                                end_date,
-                                end_prec,
-                                notes,
-                                url,
-                                self.church_id,
-                                original_address_id,
-                            ),
-                        )
-                    else:
-                        self.cursor.execute(
-                            """INSERT INTO ChurchLocHistory (
-                                    church_id, address_id,
-                                    start_date, start_date_precision,
-                                    end_date, end_date_precision,
-                                    notes, url
-                               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                            (
-                                self.church_id,
-                                address_id,
-                                start_date,
-                                start_prec,
-                                end_date,
-                                end_prec,
-                                notes,
-                                url,
-                            ),
-                        )
-
-                    self.conn.commit()
-                    self.load_locations()
-                    self.location_win.destroy()
-
-                except sqlite3.IntegrityError:
-                    messagebox.showerror("Error", "This location record already exists.")
-
-            btn_frame = ttk.Frame(self.location_win)
-            btn_frame.grid(row=len(fields), column=0, columnspan=2, pady=10)
-            ttk.Button(btn_frame, text="Save", command=save_location).pack(side="left", padx=10)
-            ttk.Button(btn_frame, text="Cancel", command=self.location_win.destroy).pack(side="left", padx=10)
-
-        def delete_location(self):
-            selected = self.location_tree.selection()
-            if not selected:
+        def save_location():
+            address_widget = self.location_entries.get("Address")
+            if not address_widget:
+                messagebox.showerror("Error", "Address field is missing.")
                 return
 
-            confirm = messagebox.askyesno("Delete", "Delete selected location record?")
-            if confirm:
-                values = self.location_tree.item(selected[0])["values"]
-                address = values[0]
-                raw_start_date = values[1]
+            address = address_widget.get().strip()
+            if address not in address_widget['values']:
+                messagebox.showerror("Invalid Address", "The address you selected is not in the database.")
+                return
 
-                try:
-                    parsed_start_date, _ = parse_date_input(raw_start_date)
-                except ValueError:
-                    messagebox.showerror("Date Error", f"Could not parse start date: {raw_start_date}")
-                    return
+            address_id = self.address_lookup.get(address)
+            if not address_id:
+                messagebox.showerror("Invalid Address", "The address is not recognized.")
+                return
 
-                if parsed_start_date:
-                    query = """DELETE FROM ChurchLocHistory
-                                WHERE church_id = ?
-                                  AND start_date = ?
-                                  AND address_id = (
-                                      SELECT address_id FROM Address WHERE address = ? LIMIT 1
-                                  )"""
-                    params = (self.church_id, parsed_start_date, address)
+            try:
+                start_input = self.location_entries["Start Date"].get().strip()
+                start_date, start_prec = parse_date_input(start_input) if start_input else (None, None)
+
+                end_input = self.location_entries["End Date"].get().strip()
+                end_date, end_prec = parse_date_input(end_input) if end_input else (None, None)
+            except ValueError as e:
+                messagebox.showerror("Date Error", str(e))
+                return
+
+            notes = self.location_entries["Notes"].get().strip()
+            url = self.location_entries["URL"].get().strip()
+
+            try:
+                if self.location_existing:
+                    original_address = self.location_existing[0]
+                    self.cursor.execute(
+                        "SELECT address_id FROM Address WHERE address = ? LIMIT 1",
+                        (original_address,),
+                    )
+                    result = self.cursor.fetchone()
+                    if not result:
+                        messagebox.showerror("Error", "Original address not found.")
+                        return
+                    original_address_id = result[0]
+                    original_display_start = self.location_existing[1]
+                    original_start_date, _ = parse_date_input(original_display_start)
+
+                    self.cursor.execute(
+                        """UPDATE ChurchLocHistory
+                           SET address_id = ?,
+                               start_date = ?, start_date_precision = ?,
+                               end_date = ?, end_date_precision = ?,
+                               notes = ?, url = ?
+                         WHERE church_id = ? AND address_id = ?""",
+                        (
+                            address_id,
+                            start_date,
+                            start_prec,
+                            end_date,
+                            end_prec,
+                            notes,
+                            url,
+                            self.church_id,
+                            original_address_id,
+                        ),
+                    )
                 else:
-                    query = """DELETE FROM ChurchLocHistory
-                                WHERE church_id = ?
-                                  AND start_date IS NULL
-                                  AND address_id = (
-                                      SELECT address_id FROM Address WHERE address = ? LIMIT 1
-                                  )"""
-                    params = (self.church_id, address)
+                    self.cursor.execute(
+                        """INSERT INTO ChurchLocHistory (
+                                church_id, address_id,
+                                start_date, start_date_precision,
+                                end_date, end_date_precision,
+                                notes, url
+                           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                        (
+                            self.church_id,
+                            address_id,
+                            start_date,
+                            start_prec,
+                            end_date,
+                            end_prec,
+                            notes,
+                            url,
+                        ),
+                    )
 
-                self.cursor.execute(query, params)
                 self.conn.commit()
                 self.load_locations()
+                self.location_win.destroy()
 
-        def sort_location_tree_by_column(self, col):
-            if not hasattr(self, "_location_sort_state"):
-                self._location_sort_state = {}
+            except sqlite3.IntegrityError:
+                messagebox.showerror("Error", "This location record already exists.")
 
-            reverse = self._location_sort_state.get(col, False)
-            items = [(self.location_tree.set(k, col), k) for k in self.location_tree.get_children("")]
+        btn_frame = ttk.Frame(self.location_win)
+        btn_frame.grid(row=len(fields), column=0, columnspan=2, pady=10)
+        ttk.Button(btn_frame, text="Save", command=save_location).pack(side="left", padx=10)
+        ttk.Button(btn_frame, text="Cancel", command=self.location_win.destroy).pack(side="left", padx=10)
 
-            if col.lower() in ("start", "end", "start date", "end date"):
-                items.sort(key=lambda item: date_sort_key(item[0]), reverse=reverse)
-            else:
-                items.sort(key=lambda item: item[0].lower() if isinstance(item[0], str) else item[0], reverse=reverse)
+    def delete_location(self):
+        selected = self.location_tree.selection()
+        if not selected:
+            return
 
-            for index, (_, k) in enumerate(items):
-                self.location_tree.move(k, "", index)
-
-            self._location_sort_state[col] = not reverse
-
-        def on_location_double_click(self, event):
-            region = self.location_tree.identify("region", event.x, event.y)
-            column = self.location_tree.identify_column(event.x)
-
-            if region != "cell":
-                return
-
-            selected = self.location_tree.selection()
-            if not selected:
-                return
-
+        confirm = messagebox.askyesno("Delete", "Delete selected location record?")
+        if confirm:
             values = self.location_tree.item(selected[0])["values"]
             address = values[0]
-            url = values[4]
+            raw_start_date = values[1]
 
-            if column == "#1":
-                if address:
-                    query = urllib.parse.quote(address)
-                    map_url = f"https://www.google.com/maps/search/?api=1&query={query}"
-                    webbrowser.open(map_url, new=2)
-                else:
-                    messagebox.showinfo("No Address", "No address provided.")
-            elif column == "#5":
-                if url and url.startswith("http"):
-                    webbrowser.open(url, new=2)
-                else:
-                    messagebox.showinfo("No URL", "No valid link provided.")
+            try:
+                parsed_start_date, _ = parse_date_input(raw_start_date)
+            except ValueError:
+                messagebox.showerror("Date Error", f"Could not parse start date: {raw_start_date}")
+                return
+
+            if parsed_start_date:
+                query = """DELETE FROM ChurchLocHistory
+                            WHERE church_id = ?
+                              AND start_date = ?
+                              AND address_id = (
+                                  SELECT address_id FROM Address WHERE address = ? LIMIT 1
+                              )"""
+                params = (self.church_id, parsed_start_date, address)
+            else:
+                query = """DELETE FROM ChurchLocHistory
+                            WHERE church_id = ?
+                              AND start_date IS NULL
+                              AND address_id = (
+                                  SELECT address_id FROM Address WHERE address = ? LIMIT 1
+                              )"""
+                params = (self.church_id, address)
+
+            self.cursor.execute(query, params)
+            self.conn.commit()
+            self.load_locations()
+
+    def sort_location_tree_by_column(self, col):
+        if not hasattr(self, "_location_sort_state"):
+            self._location_sort_state = {}
+
+        reverse = self._location_sort_state.get(col, False)
+        items = [(self.location_tree.set(k, col), k) for k in self.location_tree.get_children("")]
+
+        if col.lower() in ("start", "end", "start date", "end date"):
+            items.sort(key=lambda item: date_sort_key(item[0]), reverse=reverse)
+        else:
+            items.sort(key=lambda item: item[0].lower() if isinstance(item[0], str) else item[0], reverse=reverse)
+
+        for index, (_, k) in enumerate(items):
+            self.location_tree.move(k, "", index)
+
+        self._location_sort_state[col] = not reverse
+
+    def on_location_double_click(self, event):
+        region = self.location_tree.identify("region", event.x, event.y)
+        column = self.location_tree.identify_column(event.x)
+
+        if region != "cell":
+            return
+
+        selected = self.location_tree.selection()
+        if not selected:
+            return
+
+        values = self.location_tree.item(selected[0])["values"]
+        address = values[0]
+        url = values[4]
+
+        if column == "#1":
+            if address:
+                query = urllib.parse.quote(address)
+                map_url = f"https://www.google.com/maps/search/?api=1&query={query}"
+                webbrowser.open(map_url, new=2)
+            else:
+                messagebox.showinfo("No Address", "No address provided.")
+        elif column == "#5":
+            if url and url.startswith("http"):
+                webbrowser.open(url, new=2)
+            else:
+                messagebox.showinfo("No URL", "No valid link provided.")
