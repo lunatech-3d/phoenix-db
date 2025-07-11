@@ -30,59 +30,50 @@ class EventEditor:
             self.load_data()
 
     def setup_form(self):
-        # Basic entry fields shown at the top of the form
-        top_labels = [
+        self.master.columnconfigure(1, weight=1)  # Make column 1 (entry fields) expandable
+
+        labels = [
             "Event Type",
             "Event Date",
             "End Date",
             "Description",
             "Link URL",
+            "Original Text",
+            "Curator Summary",
+            "Tags",
         ]
 
         self.entries = {}
-        
         row = 0
-        for label in top_labels:
-            ttk.Label(self.master, text=label + ":").grid(
-                row=row, column=0, sticky="e", padx=5, pady=5
-            )
-            entry = ttk.Entry(self.master, width=40)
-            entry.grid(row=row, column=1, sticky="w", padx=5, pady=5)
-            create_context_menu(entry)
-            self.entries[label] = entry
+
+        for label in labels:
+            ttk.Label(self.master, text=label + ":").grid(row=row, column=0, sticky="e", padx=5, pady=5)
+            if label == "Original Text":
+                widget = tk.Text(self.master, width=40, height=6, wrap="word")
+                widget.grid(row=row, column=1, sticky="nsew", padx=5, pady=5)
+                self.master.rowconfigure(row, weight=1)  # Make text area row expand vertically
+            else:
+                widget = ttk.Entry(self.master, width=40)
+                widget.grid(row=row, column=1, sticky="we", padx=5, pady=5)
+            create_context_menu(widget)
+            self.entries[label] = widget
             row += 1
 
-        # Original text should appear after the Link URL field
-        ttk.Label(self.master, text="Original Text:").grid(
-            row=row, column=0, sticky="ne", padx=5, pady=5
-        )
-        otext = tk.Text(self.master, width=40, height=6, wrap="word")
-        otext.grid(row=row, column=1, sticky="w", padx=5, pady=5)
-        create_context_menu(otext)
-        self.entries["Original Text"] = otext
-        row += 1
-
-        # Remaining entry fields
-        for label in ["Curator Summary", "Tags"]:
-            ttk.Label(self.master, text=label + ":").grid(
-                row=row, column=0, sticky="e", padx=5, pady=5
-            )
-            entry.grid(row=row, column=1, sticky="w", padx=5, pady=5)
-            create_context_menu(entry)
-            self.entries[label] = entry
-            row += 1
-
+        # Person lookup
         ttk.Label(self.master, text="Person:").grid(row=row, column=0, sticky="e", padx=5, pady=5)
         pframe = ttk.Frame(self.master)
-        pframe.grid(row=row, column=1, sticky="w")
+        pframe.grid(row=row, column=1, sticky="w", padx=5, pady=5)
         self.person_label = ttk.Label(pframe, text="(none)", width=30, relief="sunken")
         self.person_label.pack(side="left")
         ttk.Button(pframe, text="Lookup", command=lambda: person_search_popup(self.set_person)).pack(side="left", padx=5)
+        row += 1
 
+        # Buttons
         btn_frame = ttk.Frame(self.master)
-        btn_frame.grid(row=row+1, columnspan=2, pady=10)
+        btn_frame.grid(row=row, column=0, columnspan=2, pady=10)
         ttk.Button(btn_frame, text="Save", command=self.save).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Cancel", command=self.master.destroy).pack(side="left", padx=5)
+
 
     def set_person(self, pid):
         if pid is None:
@@ -105,19 +96,35 @@ class EventEditor:
         row = self.cursor.fetchone()
         if not row:
             return
+
+        # Unpack values
         etype, sdate, sp, edate, ep, desc, original, pid, link, summ, tags = row
-        self.entries["Event Type"].insert(0, etype or "")
-        self.entries["Event Date"].insert(0, format_date_for_display(sdate, sp) if sdate else "")
-        self.entries["End Date"].insert(0, format_date_for_display(edate, ep) if edate else "")
-        self.entries["Description"].insert(0, desc or "")
-        if original:
-            self.entries["Original Text"].insert("1.0", original)
-        self.entries["Link URL"].insert(0, link or "")
-        self.entries["Curator Summary"].insert(0, summ or "")
-        self.entries["Tags"].insert(0, tags or "")
+
+        field_data = {
+            "Event Type": etype,
+            "Event Date": format_date_for_display(sdate, sp) if sdate else "",
+            "End Date": format_date_for_display(edate, ep) if edate else "",
+            "Description": desc,
+            "Original Text": original,
+            "Link URL": link,
+            "Curator Summary": summ,
+            "Tags": tags,
+        }
+
+        for field, value in field_data.items():
+            widget = self.entries.get(field)
+            if widget:
+                if isinstance(widget, tk.Text):
+                    widget.delete("1.0", tk.END)
+                    widget.insert("1.0", value or "")
+                else:
+                    widget.delete(0, tk.END)
+                    widget.insert(0, value or "")
+
         if pid:
             self.set_person(pid)
 
+            
     def save(self):
         try:
             sdate_raw = self.entries["Event Date"].get().strip()
