@@ -24,10 +24,17 @@ from . import (
 
 
 def open_church_form(church_id=None):
-    root = tk.Tk() if church_id is None else tk.Toplevel()
-    ChurchForm(root, church_id)
-    root.geometry("1000x700")
-    root.mainloop()
+    if church_id is None:
+        root = tk.Tk()
+        ChurchForm(root, church_id)
+        root.geometry("1000x700")
+        root.mainloop()
+    else:
+        root = tk.Toplevel()
+        ChurchForm(root, church_id)
+        root.geometry("1000x700")
+        root.grab_set()
+        root.transient()
 
 
 class ChurchForm:
@@ -378,6 +385,7 @@ class ChurchForm:
     def manage_members(self):
         sel = self.group_tree.selection()
         if not sel:
+            messagebox.showinfo("Select Group", "Please select a group first")
             return
         group_id = self.group_tree.item(sel[0])["values"][0]
         church_groupmember.manage_members(self.master, group_id)

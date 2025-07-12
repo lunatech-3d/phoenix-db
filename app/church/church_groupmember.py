@@ -11,6 +11,8 @@ import sys
 
 def manage_members(master, group_id):
     win = tk.Toplevel(master)
+    win.title("Manage Group Members")
+    win.geometry("800x400")  # or any suitable size
     MemberManager(win, group_id)
     win.grab_set()
     win.transient(master)
@@ -27,7 +29,7 @@ class MemberManager:
         self.load_members()
 
     def setup_ui(self):
-        self.tree = ttk.Treeview(self.master, columns=("id", "person", "role"), show="headings")
+        self.tree = ttk.Treeview(self.master, columns=("id", "person", "role", "notes"), show="headings")
         for col in ("person", "role"):
             self.tree.heading(col, text=col.title())
         self.tree.column("id", width=0, stretch=False)
@@ -44,14 +46,14 @@ class MemberManager:
         self.tree.delete(*self.tree.get_children())
         self.cursor.execute(
             """SELECT m.church_group_member_id, m.person_id,
-                       p.first_name || ' ' || p.last_name, m.role
+                       p.first_name || ' ' || p.last_name, m.role, m.notes
                FROM Church_GroupMember m JOIN People p ON m.person_id=p.id
                WHERE m.church_group_id=?""",
             (self.group_id,),
         )
         for row in self.cursor.fetchall():
-            mid, pid, pname, role = row
-            self.tree.insert("", "end", values=(mid, pname, role or ""), tags=(pid,))
+            mid, pid, pname, role, notes = row
+            self.tree.insert("", "end", values=(mid, pname, role, notes or ""), tags=(pid,))
 
     def add_member(self):
         MemberEditor(self.master, self.group_id, refresh=self.load_members)
