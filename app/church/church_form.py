@@ -11,6 +11,8 @@ from app.date_utils import (
     date_sort_key,
 )
 
+from app.person_linkage import person_search_popup
+
 from . import (
     church_events,
     church_group,
@@ -34,6 +36,8 @@ class ChurchForm:
         self.church_id = church_id
         self.conn = sqlite3.connect(DB_PATH)
         self.cursor = self.conn.cursor()
+        self.filtered_person_id = None
+        self.group_filter_label = None
         self.setup_ui()
         if church_id:
             self.load_data()
@@ -123,17 +127,30 @@ class ChurchForm:
         ttk.Button(btn_frame, text="Delete", command=self.delete_event).pack(side="left", padx=2)
 
     def setup_groups(self):
+        control = ttk.Frame(self.groups_tab)
+        control.pack(fill="x", pady=(5, 0), padx=5)
+        ttk.Button(control, text="Search Person", command=self.search_person_groups).pack(side="left")
+        ttk.Button(control, text="Clear Filter", command=self.clear_group_filter).pack(side="left", padx=5)
+        self.group_filter_label = ttk.Label(control, text="")
+        self.group_filter_label.pack(side="left", padx=10)
+
         self.group_tree = ttk.Treeview(self.groups_tab, columns=("id", "name", "type"), show="headings")
         for col in ("name", "type"):
             self.group_tree.heading(
-                    col,
-                    text=col.title(),
-                    command=lambda c=col: self.sort_group_tree_by_column(c),
+                col,
+                text=col.title(),
+                command=lambda c=col: self.sort_group_tree_by_column(c),
             )
         self.group_tree.column("id", width=0, stretch=False)
+        self.group_tree.bind("<Double-1>", lambda e: self.edit_group())
         self.group_tree.pack(fill="both", expand=True, padx=5, pady=5)
 
-        ttk.Button(self.groups_tab, text="Manage Members", command=self.manage_members).pack(pady=5)
+        btn_frame = ttk.Frame(self.groups_tab)
+        btn_frame.pack(pady=5)
+        ttk.Button(btn_frame, text="Add", command=self.add_group).pack(side="left", padx=2)
+        ttk.Button(btn_frame, text="Edit", command=self.edit_group).pack(side="left", padx=2)
+        ttk.Button(btn_frame, text="Delete", command=self.delete_group).pack(side="left", padx=2)
+        ttk.Button(btn_frame, text="Manage Members", command=self.manage_members).pack(side="left", padx=2)
 
     def setup_staff(self):
         cols = ("id", "person", "title", "start", "end", "notes")
@@ -293,13 +310,70 @@ class ChurchForm:
         if not self.church_id:
             return
         self.group_tree.delete(*self.group_tree.get_children())
-        self.cursor.execute(
-            "SELECT church_group_id, group_name, group_type FROM Church_Group WHERE church_id=? ORDER BY group_name",
-            (self.church_id,),
-        )
+        if self.filtered_person_id:
+            self.cursor.execute(
+                """SELECT g.church_group_id, g.group_name, g.group_type
+                       FROM Church_Group g
+                       JOIN Church_GroupMember m ON g.church_group_id = m.church_group_id
+                       WHERE g.church_id=? AND m.person_id=?
+                       ORDER BY g.group_name""",
+                (self.church_id, self.filtered_person_id),
+            )
+        else:
+            self.cursor.execute(
+                "SELECT church_group_id, group_name, group_type FROM Church_Group WHERE church_id=? ORDER BY group_name",
+                (self.church_id,),
+            )
         for row in self.cursor.fetchall():
             gid, name, gtype = row
             self.group_tree.insert("", "end", values=(gid, name or "", gtype or ""))
+
+    def search_person_groups(self):
+        person_search_popup(self.set_group_filter_person)
+
+    def set_group_filter_person(self, pid):
+        if pid is None:
+            return
+        self.cursor.execute("SELECT first_name, last_name FROM People WHERE id=?", (pid,))
+        row = self.cursor.fetchone()
+        if row:
+            name = f"{row[0]} {row[1]}"
+            self.filtered_person_id = pid
+            if self.group_filter_label:
+                self.group_filter_label.config(text=f"Groups for: {name}")
+        self.load_groups()
+
+    def clear_group_filter(self):
+        self.filtered_person_id = None
+        if self.group_filter_label:
+            self.group_filter_label.config(text="")
+        self.load_groups()
+    
+    def add_group(self):
+        if not self.church_id:
+            messagebox.showerror("Save First", "Save church before adding groups")
+            return
+        church_group.edit_group(self.master, self.church_id, refresh=self.load_groups)
+
+    def edit_group(self):
+        sel = self.group_tree.selection()
+        if not sel:
+            return
+        group_id = self.group_tree.item(sel[0])["values"][0]
+        church_group.edit_group(
+            self.master, self.church_id, group_id=group_id, refresh=self.load_groups
+        )
+
+    def delete_group(self):
+        sel = self.group_tree.selection()
+        if not sel:
+            return
+        group_id = self.group_tree.item(sel[0])["values"][0]
+        if messagebox.askyesno("Delete", "Delete selected group?"):
+            self.cursor.execute("DELETE FROM Church_Group WHERE church_group_id=?", (group_id,))
+            self.cursor.execute("DELETE FROM Church_GroupMember WHERE church_group_id=?", (group_id,))
+            self.conn.commit()
+            self.load_groups()
 
     def manage_members(self):
         sel = self.group_tree.selection()

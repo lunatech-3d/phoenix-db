@@ -5,6 +5,8 @@ import sqlite3
 from app.config import DB_PATH
 from app.context_menu import create_context_menu
 from app.person_linkage import person_search_popup
+import subprocess
+import sys
 
 
 def manage_members(master, group_id):
@@ -29,6 +31,7 @@ class MemberManager:
         for col in ("person", "role"):
             self.tree.heading(col, text=col.title())
         self.tree.column("id", width=0, stretch=False)
+        self.tree.bind("<Double-1>", self.on_member_double)
         self.tree.pack(fill="both", expand=True, padx=5, pady=5)
 
         btn_frame = ttk.Frame(self.master)
@@ -40,14 +43,15 @@ class MemberManager:
     def load_members(self):
         self.tree.delete(*self.tree.get_children())
         self.cursor.execute(
-            """SELECT m.church_group_member_id, p.first_name || ' ' || p.last_name, m.role
+            """SELECT m.church_group_member_id, m.person_id,
+                       p.first_name || ' ' || p.last_name, m.role
                FROM Church_GroupMember m JOIN People p ON m.person_id=p.id
                WHERE m.church_group_id=?""",
             (self.group_id,),
         )
         for row in self.cursor.fetchall():
-            mid, pname, role = row
-            self.tree.insert("", "end", values=(mid, pname, role or ""))
+            mid, pid, pname, role = row
+            self.tree.insert("", "end", values=(mid, pname, role or ""), tags=(pid,))
 
     def add_member(self):
         MemberEditor(self.master, self.group_id, refresh=self.load_members)
@@ -68,6 +72,13 @@ class MemberManager:
             self.cursor.execute("DELETE FROM Church_GroupMember WHERE church_group_member_id=?", (mid,))
             self.conn.commit()
             self.load_members()
+
+    def on_member_double(self, event):
+        sel = self.tree.selection()
+        if not sel:
+            return
+        pid = self.tree.item(sel[0], "tags")[0]
+        subprocess.Popen([sys.executable, "-m", "app.editme", str(pid)])
 
 
 class MemberEditor:
