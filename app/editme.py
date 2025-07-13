@@ -3162,10 +3162,28 @@ add_info_btn.grid(row=1, column=0, pady=5)
 
 my_custom_locations = get_custom_list('custom_locations')
 my_custom_cemeteries = get_custom_list('custom_cemeteries')
-create_context_menu(entry_birth_location, my_custom_locations)
-create_context_menu(entry_death_location, my_custom_locations)
+create_context_menu(
+    entry_birth_location,
+    my_custom_locations,
+    table_name="People",
+    record_id=record_id,
+    field_name="birth_location",
+)
+create_context_menu(
+    entry_death_location,
+    my_custom_locations,
+    table_name="People",
+    record_id=record_id,
+    field_name="death_location",
+)
 #create_context_menu(entry_marriage_location, my_custom_locations)
-create_context_menu(entry_buried_location, my_custom_cemeteries)
+create_context_menu(
+    entry_buried_location,
+    my_custom_cemeteries,
+    table_name="People",
+    record_id=record_id,
+    field_name="buried_location",
+)
 
 # Run the GUI window
 window.mainloop()
