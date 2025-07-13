@@ -102,8 +102,22 @@ class ChurchForm:
             r_entry.grid(row=r, column=3, sticky="w", padx=5, pady=2)
             self.entries[right] = r_entry
 
+        # Tags field
+        r = len(rows)
+        ttk.Label(self.details_frame, text="Tags:").grid(row=r, column=0, sticky="e", padx=5, pady=2)
+        tag_entry = ttk.Entry(self.details_frame, width=30)
+        tag_entry.grid(row=r, column=1, sticky="w", padx=5, pady=2)
+        self.entries["Tags"] = tag_entry
+
+        # Curator summary text area
+        ttk.Label(self.details_frame, text="Curator Summary:").grid(row=r + 1, column=0, sticky="ne", padx=5, pady=2)
+        summary_text = tk.Text(self.details_frame, width=60, height=4, wrap="word")
+        summary_text.grid(row=r + 1, column=1, columnspan=3, sticky="we", padx=5, pady=2)
+        self.entries["Curator Summary"] = summary_text
+
+
         btn_frame = ttk.Frame(self.details_frame)
-        btn_frame.grid(row=len(rows), column=0, columnspan=4, pady=10)
+        btn_frame.grid(row=r + 2, column=0, columnspan=4, pady=10)
         ttk.Button(btn_frame, text="Save", command=self.save_overview).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Close", command=self.master.destroy).pack(side="left", padx=5)
 
@@ -235,15 +249,20 @@ class ChurchForm:
 
     # --- Data Loading ---
     def load_data(self):
-        self.cursor.execute("SELECT church_name, denomination, start_date, start_date_precision, end_date, end_date_precision, notes FROM Church WHERE church_id=?", (self.church_id,))
+        self.cursor.execute(
+            "SELECT church_name, denomination, start_date, start_date_precision, end_date, end_date_precision, notes, curator_summary, event_context_tags FROM Church WHERE church_id=?",
+            (self.church_id,),
+        )
         row = self.cursor.fetchone()
         if row:
-            name, denom, sdate, sprec, edate, eprec, notes = row
+            name, denom, sdate, sprec, edate, eprec, notes, summary, tags = row
             self.entries["Name"].insert(0, name or "")
             self.entries["Denomination"].insert(0, denom or "")
             self.entries["Start Date"].insert(0, format_date_for_display(sdate, sprec) if sdate else "")
             self.entries["End Date"].insert(0, format_date_for_display(edate, eprec) if edate else "")
             self.entries["Notes"].insert(0, notes or "")
+            self.entries["Curator Summary"].insert("1.0", summary or "")
+            self.entries["Tags"].insert(0, tags or "")
         self.load_locations()
         self.load_events()
         self.load_groups()
@@ -261,15 +280,34 @@ class ChurchForm:
         start = self.entries["Start Date"].get().strip()
         end = self.entries["End Date"].get().strip()
         notes = self.entries["Notes"].get().strip()
+        summary = self.entries["Curator Summary"].get("1.0", tk.END).strip()
+        tags = self.entries["Tags"].get().strip()
         if self.church_id:
             self.cursor.execute(
-                "UPDATE Church SET church_name=?, denomination=?, start_date=?, end_date=?, notes=? WHERE church_id=?",
-                (name, denom, start or None, end or None, notes, self.church_id),
+                "UPDATE Church SET church_name=?, denomination=?, start_date=?, end_date=?, notes=?, curator_summary=?, event_context_tags=? WHERE church_id=?",
+                (
+                    name,
+                    denom,
+                    start or None,
+                    end or None,
+                    notes,
+                    summary or None,
+                    tags or None,
+                    self.church_id,
+                ),
             )
         else:
             self.cursor.execute(
-                "INSERT INTO Church (church_name, denomination, start_date, end_date, notes) VALUES (?, ?, ?, ?, ?)",
-                (name, denom, start or None, end or None, notes),
+                "INSERT INTO Church (church_name, denomination, start_date, end_date, notes, curator_summary, event_context_tags) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    name,
+                    denom,
+                    start or None,
+                    end or None,
+                    notes,
+                    summary or None,
+                    tags or None,
+                ),
             )
             self.church_id = self.cursor.lastrowid
         self.conn.commit()

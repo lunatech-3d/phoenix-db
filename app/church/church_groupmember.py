@@ -29,8 +29,8 @@ class MemberManager:
         self.load_members()
 
     def setup_ui(self):
-        self.tree = ttk.Treeview(self.master, columns=("id", "person", "role", "notes"), show="headings")
-        for col in ("person", "role"):
+        self.tree = ttk.Treeview(self.master, columns=("id", "person", "role", "recognition", "notes"), show="headings")
+        for col in ("person", "role", "recognition", "notes"):
             self.tree.heading(col, text=col.title())
         self.tree.column("id", width=0, stretch=False)
         self.tree.bind("<Double-1>", self.on_member_double)
@@ -46,14 +46,14 @@ class MemberManager:
         self.tree.delete(*self.tree.get_children())
         self.cursor.execute(
             """SELECT m.church_group_member_id, m.person_id,
-                       p.first_name || ' ' || p.last_name, m.role, m.notes
+                       p.first_name || ' ' || p.last_name, m.role, m.recognition, m.notes
                FROM Church_GroupMember m JOIN People p ON m.person_id=p.id
                WHERE m.church_group_id=?""",
             (self.group_id,),
         )
         for row in self.cursor.fetchall():
-            mid, pid, pname, role, notes = row
-            self.tree.insert("", "end", values=(mid, pname, role, notes or ""), tags=(pid,))
+            mid, pid, pname, role, recog, notes = row
+            self.tree.insert("", "end", values=(mid, pname, role, recog or "", notes or ""), tags=(pid,))   
 
     def add_member(self):
         MemberEditor(self.master, self.group_id, refresh=self.load_members)
@@ -99,7 +99,7 @@ class MemberEditor:
         self.master.transient(master)
 
     def setup_form(self):
-        labels = ["Role", "Start Date", "End Date", "Notes"]
+        labels = ["Role", "Recognition", "Start Date", "End Date", "Notes", "Tags"]
         self.entries = {}
         for row, label in enumerate(labels):
             ttk.Label(self.master, text=label + ":").grid(row=row+1, column=0, sticky="e", padx=5, pady=5)
@@ -107,6 +107,13 @@ class MemberEditor:
             entry.grid(row=row+1, column=1, sticky="w", padx=5, pady=5)
             create_context_menu(entry)
             self.entries[label] = entry
+
+        summary_row = len(labels) + 1
+        ttk.Label(self.master, text="Curator Summary:").grid(row=summary_row, column=0, sticky="ne", padx=5, pady=5)
+        summary_text = tk.Text(self.master, width=40, height=4, wrap="word")
+        summary_text.grid(row=summary_row, column=1, sticky="we", padx=5, pady=5)
+        create_context_menu(summary_text)
+        self.entries["Curator Summary"] = summary_text
 
         ttk.Label(self.master, text="Person:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
         pframe = ttk.Frame(self.master)
@@ -116,7 +123,7 @@ class MemberEditor:
         ttk.Button(pframe, text="Lookup", command=lambda: person_search_popup(self.set_person)).pack(side="left", padx=5)
 
         btn_frame = ttk.Frame(self.master)
-        btn_frame.grid(row=len(labels)+1, columnspan=2, pady=10)
+        btn_frame.grid(row=summary_row + 1, columnspan=2, pady=10)
         ttk.Button(btn_frame, text="Save", command=self.save).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Cancel", command=self.master.destroy).pack(side="left", padx=5)
 
@@ -133,16 +140,21 @@ class MemberEditor:
 
     def load_data(self):
         self.cursor.execute(
-            "SELECT person_id, role, start_date, end_date, notes FROM Church_GroupMember WHERE church_group_member_id=?",
+            "SELECT person_id, role, recognition, start_date, end_date, notes, event_context_tags, curator_summary FROM Church_GroupMember WHERE church_group_member_id=?",
             (self.member_id,),
         )
         row = self.cursor.fetchone()
         if not row:
             return
-        pid, role, sdate, edate, notes = row
+        pid, role, recog, sdate, edate, notes, tags, summary = row
         self.set_person(pid)
-        for label, value in zip(["Role", "Start Date", "End Date", "Notes"], [role, sdate, edate, notes]):
-            self.entries[label].insert(0, value or "")
+        self.entries["Role"].insert(0, role or "")
+        self.entries["Recognition"].insert(0, recog or "")
+        self.entries["Start Date"].insert(0, sdate or "")
+        self.entries["End Date"].insert(0, edate or "")
+        self.entries["Notes"].insert(0, notes or "")
+        self.entries["Tags"].insert(0, tags or "")
+        self.entries["Curator Summary"].insert("1.0", summary or "")
 
     def save(self):
         if not self.person_id:
@@ -152,18 +164,20 @@ class MemberEditor:
             self.group_id,
             self.person_id,
             self.entries["Role"].get().strip() or None,
+            self.entries["Recognition"].get().strip() or None,
             self.entries["Start Date"].get().strip() or None,
             self.entries["End Date"].get().strip() or None,
             self.entries["Notes"].get().strip() or None,
+            
         )
         if self.member_id:
             self.cursor.execute(
-                "UPDATE Church_GroupMember SET church_group_id=?, person_id=?, role=?, start_date=?, end_date=?, notes=? WHERE church_group_member_id=?",
+                "UPDATE Church_GroupMember SET church_group_id=?, person_id=?, role=?, recognition=?, start_date=?, end_date=?, notes=?, event_context_tags=?, curator_summary=? WHERE church_group_member_id=?",
                 data + (self.member_id,),
             )
         else:
             self.cursor.execute(
-                "INSERT INTO Church_GroupMember (church_group_id, person_id, role, start_date, end_date, notes) VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO Church_GroupMember (church_group_id, person_id, role, recognition, start_date, end_date, notes, event_context_tags, curator_summary) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 data,
             )
             self.member_id = self.cursor.lastrowid

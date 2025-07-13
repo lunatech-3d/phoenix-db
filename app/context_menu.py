@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import sys
 import subprocess
+from app.source_link_editor import open_source_link_editor
 
 def paste_from_clipboard(entry):
     try:
@@ -22,7 +23,7 @@ def insert_custom_entry(entry, text):
     entry.delete(0, tk.END)
     entry.insert(0, text)
 
-def create_context_menu(entry, entries=None):
+def create_context_menu(entry, entries=None, table_name=None, record_id=None, field_name=None):
     """
     Create a context menu for a given entry or text widget.
     If 'entries' are provided, add them to the menu for special fields.
@@ -47,10 +48,19 @@ def create_context_menu(entry, entries=None):
     # NOTE: Commented out until `add_a_source` is restructured to receive correct args
     # edit_menu.add_command(label="Add a Source", command=lambda: add_a_source(id, first_name, middle_name, last_name, married_name))
 
+    if table_name and record_id is not None:
+        edit_menu.add_command(
+            label="Add/View Source",
+            command=lambda: open_source_link_editor(table_name, record_id, field_name),
+        )
+
     if entries:
         edit_menu.add_separator()
         for text in entries:
-            edit_menu.add_command(label=text, command=lambda text=text: insert_custom_entry(entry, text))
+            edit_menu.add_command(
+                label=text,
+                command=lambda text=text: insert_custom_entry(entry, text),
+            )
 
     def show_context_menu(event):
         entry.focus_set()
@@ -69,10 +79,14 @@ def create_context_menu(entry, entries=None):
     entry.bind("<Control-Insert>", lambda e: entry.event_generate("<<Copy>>"))
 
 
-
-def apply_context_menu_to_all_entries(container):
+def apply_context_menu_to_all_entries(container, table_name=None, record_id=None):
     for widget in container.winfo_children():
         if isinstance(widget, (ttk.Entry, tk.Text)):
-            create_context_menu(widget)
+            create_context_menu(
+                widget,
+                table_name=table_name,
+                record_id=record_id,
+                field_name=getattr(widget, "db_field", None),
+            )
         elif widget.winfo_children():
-            apply_context_menu_to_all_entries(widget)
+            apply_context_menu_to_all_entries(widget, table_name, record_id)

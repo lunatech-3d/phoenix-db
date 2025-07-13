@@ -27,42 +27,59 @@ class GroupEditor:
             self.load_data()
 
     def setup_form(self):
-        labels = ["Group Name", "Year Active", "Group Type", "Notes"]
+        labels = ["Group Name", "Year Active", "Group Type", "Notes", "Tags"]
         self.entries = {}
         for row, label in enumerate(labels):
             ttk.Label(self.master, text=label + ":").grid(row=row, column=0, sticky="e", padx=5, pady=5)
-            entry = ttk.Entry(self.master, width=40)
-            entry.grid(row=row, column=1, sticky="w", padx=5, pady=5)
-            create_context_menu(entry)
-            self.entries[label] = entry
+            if label == "Notes":
+                widget = tk.Text(self.master, width=40, height=4, wrap="word")
+                widget.grid(row=row, column=1, sticky="we", padx=5, pady=5)
+            else:
+                widget = ttk.Entry(self.master, width=40)
+                widget.grid(row=row, column=1, sticky="w", padx=5, pady=5)
+            create_context_menu(widget)
+            self.entries[label] = widget
+
+        summary_row = len(labels)
+        ttk.Label(self.master, text="Curator Summary:").grid(row=summary_row, column=0, sticky="ne", padx=5, pady=5)
+        summary_text = tk.Text(self.master, width=40, height=4, wrap="word")
+        summary_text.grid(row=summary_row, column=1, sticky="we", padx=5, pady=5)
+        create_context_menu(summary_text)
+        self.entries["Curator Summary"] = summary_text
         btn_frame = ttk.Frame(self.master)
-        btn_frame.grid(row=len(labels), columnspan=2, pady=10)
+        btn_frame.grid(row=summary_row + 1, columnspan=2, pady=10)
         ttk.Button(btn_frame, text="Save", command=self.save).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Cancel", command=self.master.destroy).pack(side="left", padx=5)
 
     def load_data(self):
         self.cursor.execute(
-            "SELECT group_name, year_active, group_type, notes FROM Church_Group WHERE church_group_id=?",
+            "SELECT group_name, year_active, group_type, notes, event_context_tags, curator_summary FROM Church_Group WHERE church_group_id=?",
             (self.group_id,),
         )
         row = self.cursor.fetchone()
         if row:
-            for label, value in zip(["Group Name", "Year Active", "Group Type", "Notes"], row):
-                self.entries[label].insert(0, value or "")
+            "SELECT group_name, year_active, group_type, notes, event_context_tags, curator_summary FROM Church_Group WHERE church_group_id=?",
 
     def save(self):
-        data = [self.entries[l].get().strip() or None for l in ["Group Name", "Year Active", "Group Type", "Notes"]]
+        data = [
+            self.entries["Group Name"].get().strip() or None,
+            self.entries["Year Active"].get().strip() or None,
+            self.entries["Group Type"].get().strip() or None,
+            self.entries["Notes"].get("1.0", tk.END).strip() or None,
+            self.entries["Tags"].get().strip() or None,
+            self.entries["Curator Summary"].get("1.0", tk.END).strip() or None,
+        ]
         if not data[0]:
             messagebox.showerror("Missing", "Group Name is required")
             return
         if self.group_id:
             self.cursor.execute(
-                "UPDATE Church_Group SET group_name=?, year_active=?, group_type=?, notes=? WHERE church_group_id=?",
+                "UPDATE Church_Group SET group_name=?, year_active=?, group_type=?, notes=?, event_context_tags=?, curator_summary=? WHERE church_group_id=?",
                 (*data, self.group_id),
             )
         else:
             self.cursor.execute(
-                "INSERT INTO Church_Group (church_id, group_name, year_active, group_type, notes) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO Church_Group (church_id, group_name, year_active, group_type, notes, event_context_tags, curator_summary) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (self.church_id, *data),
             )
             self.group_id = self.cursor.lastrowid
