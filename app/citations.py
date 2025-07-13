@@ -23,8 +23,8 @@ def update_sources_dropdown():
     source_dropdown['values'] = [source[0] for source in sources]  # Set only titles
 
 def manage_sources():
-    """Launch the external sources.py script."""
-    subprocess.run([sys.executable, str("app".sources)])
+    """Launch the Sources management UI."""
+    subprocess.run([sys.executable, "-m", "app.source.sources"])
 
 
 def add_citation():

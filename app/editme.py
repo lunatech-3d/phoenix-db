@@ -77,6 +77,7 @@ from app.deeds import (
 )
 
 from app.context_menu import create_context_menu
+from app.context_menu import create_context_menu, apply_context_menu_to_all_entries
 from app.date_utils import (
     parse_date_input,
     format_date_for_display,
@@ -245,13 +246,6 @@ def close_connection():
         connection_open = False
     window.destroy() # Close the form    
 
-# Give the User the ability to use a right-mouse-click to access content on the clipboard
-def apply_context_menu_to_all_entries(container):
-    for widget in container.winfo_children():
-        if isinstance(widget, ttk.Entry):
-            create_context_menu(widget)
-        elif widget.winfo_children():
-            apply_context_menu_to_all_entries(widget)  # Recursively apply to child containers
 
 # Function to add a Residence Record for the current person
 def add_residence_rec(event=None):
@@ -2638,36 +2632,42 @@ label_status2.config(text=f"{status_symbol if status_symbol else 'x'}")
 label_first_name = ttk.Label(frame_overview, text="First Name: ")
 label_first_name.grid(row=1, column=0, padx=(5,0), pady=5, sticky='e')
 entry_first_name = ttk.Entry(frame_overview)
+entry_first_name.db_field = "first_name"
 entry_first_name.grid(row=1, column=1, padx=(0,5), pady=5, sticky='w')
 
 # Middle Name entry
 label_middle_name = ttk.Label(frame_overview, text="Middle Name: ")
 label_middle_name.grid(row=1, column=2, padx=(0,0), pady=5, sticky='e')
 entry_middle_name = ttk.Entry(frame_overview)
+entry_middle_name.db_field = "middle_name"
 entry_middle_name.grid(row=1, column=3, padx=(0,0), pady=5, sticky='w')
 
 # Last Name entry
 label_last_name = ttk.Label(frame_overview, text="Last Name: ")
 label_last_name.grid(row=1, column=4, padx=(5,0), pady=5, sticky='e')
 entry_last_name = ttk.Entry(frame_overview)
+entry_last_name.db_field = "last_name"
 entry_last_name.grid(row=1, column=5, padx=(0,5), pady=5, sticky='w')
 
 # Title entry
 label_title = ttk.Label(frame_overview, text="Title: ")
 label_title.grid(row=2, column=0, padx=5, pady=5, sticky='e')
 entry_title = ttk.Entry(frame_overview)
+entry_title.db_field = "title"
 entry_title.grid(row=2, column=1, padx=5, pady=5, sticky='w')
 
 # Nick Name entry
 label_nick_name = ttk.Label(frame_overview, text="Nick Name: ")
 label_nick_name.grid(row=2, column=2, padx=(0,0), pady=5, sticky='e')
 entry_nick_name = ttk.Entry(frame_overview)
+entry_nick_name.db_field = "nick_name"
 entry_nick_name.grid(row=2, column=3, padx=(0,0), pady=5, sticky='w')
 
 # Married Name entry
 label_married_name = ttk.Label(frame_overview, text="Married Name: ")
 label_married_name.grid(row=2, column=4, padx=5, pady=5, sticky='e')
 entry_married_name = ttk.Entry(frame_overview)
+entry_married_name.db_field = "married_name"
 entry_married_name.grid(row=2, column=5, padx=5, pady=5, sticky='w')
 
 # Separator on the form
@@ -2678,54 +2678,63 @@ separator.grid(row=3, columnspan=6, pady=10, sticky='ew')
 label_birth_date = ttk.Label(frame_overview, text="Birthdate: ")
 label_birth_date.grid(row=4, column=0, padx=2, pady=5, sticky='e')
 entry_birth_date = ttk.Entry(frame_overview)
+entry_birth_date.db_field = "birth_date"
 entry_birth_date.grid(row=4, column=1, padx=2, pady=5, sticky='w')
 
 # Birth Location entry
 label_birth_location = ttk.Label(frame_overview, text="Birthplace: ")
 label_birth_location.grid(row=4, column=2, padx=5, pady=5, sticky='e')
 entry_birth_location = ttk.Entry(frame_overview)
+entry_birth_location.db_field = "birth_location"
 entry_birth_location.grid(row=4, column=3, padx=5, pady=5, sticky='w')
 
 # Death Date entry
 label_death_date = ttk.Label(frame_overview, text="Death date: ")
 label_death_date.grid(row=5, column=0, padx=2, pady=5, sticky='e')
 entry_death_date = ttk.Entry(frame_overview)
+entry_death_date.db_field = "death_date"
 entry_death_date.grid(row=5, column=1, padx=2, pady=5, sticky='w')
 
 # Death Location entry
 label_death_location = ttk.Label(frame_overview, text="Death place: ")
 label_death_location.grid(row=5, column=2, padx=5, pady=5, sticky='e')
 entry_death_location = ttk.Entry(frame_overview)
+entry_death_location.db_field = "death_location"
 entry_death_location.grid(row=5, column=3, padx=5, pady=5, sticky='w')
 
 # Death Cause entry
 label_death_cause = ttk.Label(frame_overview, text="Death Cause: ")
 label_death_cause.grid(row=5, column=4, padx=5, pady=5, sticky='e')
 entry_death_cause = ttk.Entry(frame_overview)
+entry_death_cause.db_field = "death_cause"
 entry_death_cause.grid(row=5, column=5, padx=5, pady=5, sticky='w')
 
 # Buried Date entry
 label_buried_date = ttk.Label(frame_overview, text="Buried date: ")
 label_buried_date.grid(row=6, column=0, padx=2, pady=5, sticky='e')
 entry_buried_date = ttk.Entry(frame_overview)
+entry_buried_date.db_field = "buried_date"
 entry_buried_date.grid(row=6, column=1, padx=2, pady=5, sticky='w')
 
 # Buried Location entry
 label_buried_location = ttk.Label(frame_overview, text="Buried Location: ")
 label_buried_location.grid(row=6, column=2, padx=5, pady=5, sticky='e')
 entry_buried_location = ttk.Entry(frame_overview, width=50)
+entry_buried_location.db_field = "buried_location"
 entry_buried_location.grid(row=6, column=3, padx=5, pady=5, sticky='ew')
 
 # Buried Notes entry
 label_buried_notes = ttk.Label(frame_overview, text="Buried Notes: ")
 label_buried_notes.grid(row=7, column=0, padx=5, pady=5, sticky='e')
 entry_buried_notes = ttk.Entry(frame_overview, width=35)
+entry_buried_notes.db_field = "buried_notes"
 entry_buried_notes.grid(row=7, column=1, padx=2, pady=5, sticky='w')
 
 # Buried Source entry
 label_buried_source = ttk.Label(frame_overview, text="Buried Source: ")
 label_buried_source.grid(row=7, column=2, padx=2, pady=5, sticky='e')
 entry_buried_source = ttk.Entry(frame_overview)
+entry_buried_source.db_field = "buried_source"
 entry_buried_source.grid(row=7,column=3, padx=2, pady=5, sticky='w')
 
 # --- Buried Link Label and Entry ---
@@ -3125,7 +3134,7 @@ update_mother_name()  # Update the mother's name label
 # Create a frame for the buttons
 frame_buttons = ttk.Frame(frame_overview)
 frame_buttons.grid(row=28, column=2, pady=10, sticky="nsew")
-apply_context_menu_to_all_entries(frame_overview)
+apply_context_menu_to_all_entries(frame_overview, table_name="People", record_id=record_id)
 
 # Edit/Save Button
 edit_button = ttk.Button(frame_buttons, text="Update", command=update_record)

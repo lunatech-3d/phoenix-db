@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import sys
 import subprocess
-from app.source_link_editor import open_source_link_editor
+from app.source.source_link_editor import open_source_link_editor
 
 def paste_from_clipboard(entry):
     try:

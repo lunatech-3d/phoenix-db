@@ -2,6 +2,7 @@ import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
 from app.config import DB_PATH
+from app.source.sources import add_source
 
 
 def open_source_link_editor(table_name, record_id, field_name=None):

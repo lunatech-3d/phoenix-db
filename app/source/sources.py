@@ -7,6 +7,9 @@ from tkinter import messagebox
 #Local Imports
 from app.config import DB_PATH, PATHS
 
+window = None
+tree = None
+
 def refresh_sources():
     """ Fetch sources from the database and update the tree view """
     for i in tree.get_children():
@@ -18,8 +21,8 @@ def refresh_sources():
         tree.insert("", "end", values=row)
     conn.close()
 
-def add_source():
-    """ Open a new window to add a source """
+def add_source(parent):
+    """Open a new window attached to ``parent`` to add a source."""
     def save_new_source():
         # Implement saving logic here
         conn = sqlite3.connect(DB_PATH)
@@ -31,7 +34,7 @@ def add_source():
         add_window.destroy()
         refresh_sources()
     
-    add_window = tk.Toplevel(window)
+    add_window = tk.Toplevel(parent)
     add_window.title("Add New Source")
     
     # Entry fields
@@ -122,7 +125,6 @@ def edit_source():
         messagebox.showerror("Error", "No source selected. Please select a source to edit.")
 
     
-
 def delete_source():
     """ Delete the selected source after confirmation """
     selected_item = tree.selection()
@@ -142,23 +144,28 @@ def delete_source():
     else:
         messagebox.showerror("Error", "No source selected. Please select a source to delete.")
 
-# Main window
-window = tk.Tk()
-window.title("Source Management")
+def launch_gui():
+    """Launch the standalone Source Management interface."""
+    global window, tree
+    window = tk.Tk()
+    window.title("Source Management")
 
-# Treeview to display sources
-tree = ttk.Treeview(window, columns=("ID", "Title", "Author", "Publisher", "Publication Date", "Note"), show="headings")
-for col in tree["columns"]:
-    tree.heading(col, text=col)
-    tree.column(col, width=100)
-tree.pack(fill=tk.BOTH, expand=True)
+    tree = ttk.Treeview(window,
+                        columns=("ID", "Title", "Author", "Publisher", "Publication Date", "Note"),
+                        show="headings")
+    for col in tree["columns"]:
+        tree.heading(col, text=col)
+        tree.column(col, width=100)
+    tree.pack(fill=tk.BOTH, expand=True)
 
-# Buttons for source management
-ttk.Button(window, text="Refresh Sources", command=refresh_sources).pack(side=tk.LEFT)
-ttk.Button(window, text="Add Source", command=add_source).pack(side=tk.LEFT)
-ttk.Button(window, text="Edit Source", command=edit_source).pack(side=tk.LEFT)
-ttk.Button(window, text="Delete Source", command=delete_source).pack(side=tk.LEFT)
+    ttk.Button(window, text="Refresh Sources", command=refresh_sources).pack(side=tk.LEFT)
+    ttk.Button(window, text="Add Source", command=lambda: add_source(window)).pack(side=tk.LEFT)
+    ttk.Button(window, text="Edit Source", command=edit_source).pack(side=tk.LEFT)
+    ttk.Button(window, text="Delete Source", command=delete_source).pack(side=tk.LEFT)
 
-refresh_sources()  # Initial load of source data
+    refresh_sources()  # Initial load of source data
 
-window.mainloop()
+    window.mainloop()
+
+if __name__ == "__main__":
+    launch_gui()

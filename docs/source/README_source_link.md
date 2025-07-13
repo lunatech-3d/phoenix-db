@@ -23,6 +23,6 @@ This document describes the Source Linking subsystem which allows any record or 
 ## UI Workflow
 1. Right‑click on a field and choose **Add/View Source**.
 2. A popup window shows all existing links and a form to add a new one.
-3. Optionally create a new Source on the fly.
+3. Use the **Add Source** button next to the dropdown to create a new Source on the fly.
 
-The popup is implemented in `source_link_editor.py` and is launched from `context_menu.py`.
+The popup is implemented in `app/source/source_link_editor.py` and is launched from `context_menu.py`.

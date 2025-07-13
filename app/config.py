@@ -15,7 +15,7 @@ class PATHS:
     """Centralized references to application scripts."""
 
     citations = str(APP_DIR / "citations.py")
-    sources = str(APP_DIR / "sources.py")
+    sources = str(APP_DIR / "source" / "sources.py")
     editme = str(APP_DIR / "editme.py")
     business = str(APP_DIR / "business.py")
     people = str(APP_DIR / "people.py")

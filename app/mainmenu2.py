@@ -203,7 +203,7 @@ def view_residents():
 
 def view_sources():
      # Run the sources.py script with the necessary arguments
-        subprocess.run([sys.executable, "-m", "app.sources"])
+        subprocess.run([sys.executable, "-m", "app.source.sources"])
         
 def view_addresses():
     # Run the viewtheaddresses.py script with the necessary arguments
