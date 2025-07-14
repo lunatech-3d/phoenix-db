@@ -29,43 +29,91 @@ def open_source_link_editor(table_name, record_id, field_name=None):
         return cur.fetchall()
 
     def refresh_tree():
+        """Reload the tree with Source_Link records for this table/record."""
         for i in tree.get_children():
             tree.delete(i)
         cur.execute(
-            """SELECT sl.source_link_id, sl.field_name, s.title, sl.original_text,
-                      sl.url_override, sl.created_at
-                   FROM Source_Link sl
-                   JOIN Sources s ON sl.source_id = s.id
-                   WHERE sl.table_name=? AND sl.record_id=?
-                   ORDER BY sl.created_at DESC""",
+            """
+            SELECT sl.source_link_id, sl.field_name, s.title,
+                   sl.original_text, sl.url_override, sl.created_at
+              FROM Source_Link sl
+              JOIN Sources s ON sl.source_id = s.id
+             WHERE sl.table_name=? AND sl.record_id=?
+             ORDER BY sl.created_at DESC
+            """,
             (table_name, record_id),
         )
         for row in cur.fetchall():
-            tree.insert("", "end", values=row[1:])
+            tree.insert("", "end", iid=row[0], values=row)
 
-    def save_link():
-        if not source_var.get():
-            messagebox.showerror("Missing", "Please select a source")
-            return
-        cur.execute(
-            "INSERT INTO Source_Link (table_name, record_id, field_name, source_id, original_text, url_override, notes, created_at)"
-            " VALUES (?,?,?,?,?,?,?,?)",
-            (
-                table_name,
-                record_id,
-                field_var.get() or None,
-                source_dropdown.ids[source_var.get()],
-                original_text.get("1.0", "end").strip(),
-                url_entry.get().strip() or None,
-                notes_text.get("1.0", "end").strip() or None,
-                datetime.now().isoformat(timespec="seconds"),
-            ),
-        )
-        conn.commit()
-        refresh_tree()
+    current_id = None
+
+    def clear_form():
+        """Reset the entry widgets."""
+        source_var.set("")
+        field_var.set(field_name or "")
         original_text.delete("1.0", "end")
         url_entry.delete(0, "end")
         notes_text.delete("1.0", "end")
+
+    def save_link():
+        nonlocal current_id
+        if not source_var.get():
+            messagebox.showerror("Missing", "Please select a source", parent=win)
+            return
+        data = (
+            field_var.get() or None,
+            source_dropdown.ids[source_var.get()],
+            original_text.get("1.0", "end").strip(),
+            url_entry.get().strip() or None,
+            notes_text.get("1.0", "end").strip() or None,
+        )
+        if current_id:
+            cur.execute(
+                """
+                UPDATE Source_Link
+                   SET field_name=?, source_id=?, original_text=?,
+                       url_override=?, notes=?
+                 WHERE source_link_id=?
+                """,
+                (*data, current_id),
+            )
+        else:
+            cur.execute(
+                """
+                INSERT INTO Source_Link (
+                    table_name, record_id, field_name, source_id,
+                    original_text, url_override, notes, created_at
+                ) VALUES (?,?,?,?,?,?,?,?)
+                """,
+                (
+                    table_name,
+                    record_id,
+                    *data,
+                    datetime.now().isoformat(timespec="seconds"),
+                ),
+            )
+        conn.commit()
+        refresh_tree()
+        
+
+        original_text.delete("1.0", "end")
+        original_text.insert("1.0", orig or "")
+        url_entry.delete(0, "end")
+        notes_text.delete("1.0", "end")
+        if notes:
+            notes_text.insert("1.0", notes)
+
+    def delete_link():
+        selected = tree.selection()
+        if not selected:
+            messagebox.showwarning("No Selection", "Please select a record to delete.", parent=win)
+            return
+        link_id = selected[0]
+        if messagebox.askyesno("Confirm Delete", "Delete selected source link?", parent=win):
+            cur.execute("DELETE FROM Source_Link WHERE source_link_id=?", (link_id,))
+            conn.commit()
+            refresh_tree()
 
     win = tk.Toplevel()
     win.title("Source Links")
@@ -96,14 +144,18 @@ def open_source_link_editor(table_name, record_id, field_name=None):
     notes_text = tk.Text(win, width=50, height=3)
     notes_text.grid(row=5, column=1, columnspan=3, padx=5, pady=2, sticky="we")
 
-    ttk.Button(win, text="Save", command=save_link).grid(row=6, column=1, pady=5)
-    ttk.Button(win, text="Close", command=win.destroy).grid(row=6, column=2, pady=5)
+    ttk.Button(win, text="Save", command=save_link).grid(row=6, column=0, pady=5)
+    ttk.Button(win, text="Edit", command=edit_link).grid(row=6, column=1, pady=5)
+    ttk.Button(win, text="Delete", command=delete_link).grid(row=6, column=2, pady=5)
+    ttk.Button(win, text="Close", command=win.destroy).grid(row=6, column=3, pady=5)
 
-    columns = ("Field", "Source", "Original Text", "URL", "Created")
+    columns = ("id", "Field", "Source", "Original Text", "URL", "Created")
     tree = ttk.Treeview(win, columns=columns, show="headings")
     for col in columns:
         tree.heading(col, text=col)
+    tree.column("id", width=0, stretch=False)
     tree.grid(row=7, column=0, columnspan=4, padx=5, pady=10, sticky="nsew")
+    tree.bind("<Double-1>", edit_link)
     win.grid_rowconfigure(7, weight=1)
     win.grid_columnconfigure(1, weight=1)
 

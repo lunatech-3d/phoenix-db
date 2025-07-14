@@ -24,5 +24,6 @@ This document describes the Source Linking subsystem which allows any record or 
 1. Right‑click on a field and choose **Add/View Source**.
 2. A popup window shows all existing links and a form to add a new one.
 3. Use the **Add Source** button next to the dropdown to create a new Source on the fly.
+4. Double‑click an entry in the list (or use the **Edit** button) to load it for editing. Use **Delete** to remove a link.
 
 The popup is implemented in `app/source/source_link_editor.py` and is launched from `context_menu.py`.
