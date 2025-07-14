@@ -1,8 +1,8 @@
 import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
+from datetime import datetime
 from app.config import DB_PATH
-from app.source.sources import add_source
 
 
 def open_source_link_editor(table_name, record_id, field_name=None):
@@ -11,11 +11,11 @@ def open_source_link_editor(table_name, record_id, field_name=None):
     cur = conn.cursor()
     cur.execute(
         """CREATE TABLE IF NOT EXISTS Source_Link (
-            link_id INTEGER PRIMARY KEY,
+            source_link_id INTEGER PRIMARY KEY,
+            source_id INTEGER,
             table_name TEXT,
             record_id INTEGER,
             field_name TEXT,
-            source_id INTEGER,
             original_text TEXT,
             url_override TEXT,
             notes TEXT,
@@ -25,14 +25,14 @@ def open_source_link_editor(table_name, record_id, field_name=None):
     conn.commit()
 
     def fetch_sources():
-        cur.execute("SELECT id, title FROM Sources ORDER BY title")
+        cur.execute("SELECT id, title FROM Sources ORDER BY id")
         return cur.fetchall()
 
     def refresh_tree():
         for i in tree.get_children():
             tree.delete(i)
         cur.execute(
-            """SELECT sl.link_id, sl.field_name, s.title, sl.original_text,
+            """SELECT sl.source_link_id, sl.field_name, s.title, sl.original_text,
                       sl.url_override, sl.created_at
                    FROM Source_Link sl
                    JOIN Sources s ON sl.source_id = s.id
@@ -48,8 +48,8 @@ def open_source_link_editor(table_name, record_id, field_name=None):
             messagebox.showerror("Missing", "Please select a source")
             return
         cur.execute(
-            "INSERT INTO Source_Link (table_name, record_id, field_name, source_id, original_text, url_override, notes)"
-            " VALUES (?,?,?,?,?,?,?)",
+            "INSERT INTO Source_Link (table_name, record_id, field_name, source_id, original_text, url_override, notes, created_at)"
+            " VALUES (?,?,?,?,?,?,?,?)",
             (
                 table_name,
                 record_id,
@@ -58,6 +58,7 @@ def open_source_link_editor(table_name, record_id, field_name=None):
                 original_text.get("1.0", "end").strip(),
                 url_entry.get().strip() or None,
                 notes_text.get("1.0", "end").strip() or None,
+                datetime.now().isoformat(timespec="seconds"),
             ),
         )
         conn.commit()

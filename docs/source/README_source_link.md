@@ -10,11 +10,11 @@ This document describes the Source Linking subsystem which allows any record or 
 ## Table: `Source_Link`
 | Column | Type | Notes |
 |-------|------|------|
-| `link_id` | INTEGER PRIMARY KEY | |
+| `source_link_id` | INTEGER PRIMARY KEY |
+| `source_id` | INTEGER | References `Sources.id` |
 | `table_name` | TEXT | Name of the table containing the record |
 | `record_id` | INTEGER | Identifier of the row being cited |
 | `field_name` | TEXT | Optional field being cited (NULL if record level) |
-| `source_id` | INTEGER | References `Sources.id` |
 | `original_text` | TEXT | Verbatim excerpt from the source |
 | `url_override` | TEXT | Optional direct link to the exact page |
 | `notes` | TEXT | Curator notes |
