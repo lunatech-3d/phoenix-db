@@ -24,6 +24,10 @@ def open_source_link_editor(table_name, record_id, field_name=None):
     )
     conn.commit()
 
+    # Placeholder so nested functions can reference the widget before it's
+    # created. The actual Treeview is assigned further below.
+    tree = None
+
     def fetch_sources():
         cur.execute("SELECT id, title FROM Sources ORDER BY id")
         return cur.fetchall()
@@ -95,11 +99,37 @@ def open_source_link_editor(table_name, record_id, field_name=None):
             )
         conn.commit()
         refresh_tree()
-        
+        clear_form()
+        current_id = None
 
+    def edit_link(event=None):
+        nonlocal current_id
+        selected = tree.selection()
+        if not selected:
+            messagebox.showwarning("No Selection", "Please select a record to edit.", parent=win)
+            return
+        current_id = selected[0]
+        cur.execute(
+            """
+            SELECT source_id, field_name, original_text, url_override, notes
+              FROM Source_Link WHERE source_link_id=?
+            """,
+            (current_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            return
+        sid, fld, orig, url, notes = row
+        for title, sid_val in source_dropdown.ids.items():
+            if sid_val == sid:
+                source_var.set(title)
+                break
+        field_var.set(fld or "")
         original_text.delete("1.0", "end")
         original_text.insert("1.0", orig or "")
         url_entry.delete(0, "end")
+        if url:
+            url_entry.insert(0, url)
         notes_text.delete("1.0", "end")
         if notes:
             notes_text.insert("1.0", notes)
@@ -144,11 +174,17 @@ def open_source_link_editor(table_name, record_id, field_name=None):
     notes_text = tk.Text(win, width=50, height=3)
     notes_text.grid(row=5, column=1, columnspan=3, padx=5, pady=2, sticky="we")
 
-    ttk.Button(win, text="Save", command=save_link).grid(row=6, column=0, pady=5)
-    ttk.Button(win, text="Edit", command=edit_link).grid(row=6, column=1, pady=5)
-    ttk.Button(win, text="Delete", command=delete_link).grid(row=6, column=2, pady=5)
-    ttk.Button(win, text="Close", command=win.destroy).grid(row=6, column=3, pady=5)
+    from app.context_menu import create_context_menu
+    for widget in (source_dropdown, field_entry, original_text, url_entry, notes_text):
+        create_context_menu(widget)
 
+    btn_frame = ttk.Frame(win)
+    btn_frame.grid(row=8, column=0, columnspan=4, pady=5)
+    ttk.Button(btn_frame, text="Save", command=save_link).pack(side="left", padx=5)
+    ttk.Button(btn_frame, text="Edit", command=edit_link).pack(side="left", padx=5)
+    ttk.Button(btn_frame, text="Delete", command=delete_link).pack(side="left", padx=5)
+    ttk.Button(btn_frame, text="Close", command=win.destroy).pack(side="left", padx=5)
+    
     columns = ("id", "Field", "Source", "Original Text", "URL", "Created")
     tree = ttk.Treeview(win, columns=columns, show="headings")
     for col in columns:
