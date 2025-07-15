@@ -546,7 +546,9 @@ def open_add_menu(event=None):
     if not has_education_data(record_id):
         menu.add_command(
             label="Add Education",
-            command=lambda: open_add_education_window(record_id, connection),
+            command=lambda: open_add_education_window(
+                record_id, connection, refresh_education_tab
+            ),
         )
     menu.add_command(
         label="Add Deed",
@@ -709,6 +711,12 @@ institution_tree = None
 _institution_notebook = None
 _institution_person_id = None
 
+# Track the Education tab so it can be created on demand
+education_tab_frame = None
+education_tree = None
+_education_notebook = None
+_education_person_id = None
+
 # Helper functions to check if a person has data for specific tabs. These are
 # used so tabs are displayed when data exists even if the user's default
 # preference is to hide the tab.
@@ -743,6 +751,38 @@ def has_education_data(pid):
         (pid,),
     )
     return cursor.fetchone() is not None
+
+
+def refresh_education_tab():
+    """Load or create the Education tab for the current person."""
+    global education_tab_frame, education_tree
+    if _education_notebook is None or _education_person_id is None:
+        return
+
+    cur = connection.cursor()
+    cur.execute(
+        """
+        SELECT id, school_name, record_year, degree,
+               field_of_study, position, notes
+          FROM Education
+         WHERE person_id = ?
+         ORDER BY record_year
+        """,
+        (_education_person_id,),
+    )
+    rows = cur.fetchall()
+
+    if education_tab_frame is None:
+        if rows:
+            create_education_tab(_education_notebook, _education_person_id)
+        return
+
+    load_education_records(cur, education_tree, _education_person_id)
+
+    if not rows and education_tab_frame is not None:
+        idx = _education_notebook.index(education_tab_frame)
+        _education_notebook.forget(idx)
+        education_tab_frame = None
 
 
 def has_business_data(pid):
@@ -1753,10 +1793,18 @@ def open_media_url(event, tree):
 # -------------------------------
 
 def create_education_tab(notebook, person_id):
+    global education_tab_frame, education_tree, _education_notebook, _education_person_id
+    _education_notebook = notebook
+    _education_person_id = person_id
+    if education_tab_frame is not None:
+        education_tab_frame = frame_education
+        return education_tab_frame
+
     frame_education = ttk.Frame(notebook)
     notebook.add(frame_education, text='Education/Career')
 
     tree = initialize_education_section(frame_education, connection, person_id)
+    education_tree = tree
     load_education_records(connection.cursor(), tree, person_id)
     return frame_education
 

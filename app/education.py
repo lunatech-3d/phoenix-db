@@ -30,7 +30,7 @@ def open_add_education_window(person_id, connection, refresh_callback=None):
         degree = entry_degree.get().strip() or None
         field = entry_field.get().strip() or None
         position = entry_position.get().strip() or None
-        notes = entry_notes.get().strip() or None
+        notes = entry_notes.get("1.0", "end").strip() or None
 
         if year and not year.isdigit():
             messagebox.showerror("Validation Error", "Record year must be numeric or blank.")
@@ -107,7 +107,7 @@ def open_edit_education_window(education_id, connection, refresh_callback=None):
         new_degree = entry_degree.get().strip() or None
         new_field = entry_field.get().strip() or None
         new_position = entry_position.get().strip() or None
-        new_notes = entry_notes.get().strip() or None
+        new_notes = entry_notes.get("1.0", "end").strip() or None
         if new_year and not new_year.isdigit():
             messagebox.showerror("Validation Error", "Record year must be numeric or blank.")
             return
