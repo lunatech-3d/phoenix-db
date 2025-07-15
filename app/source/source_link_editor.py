@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
 from app.config import DB_PATH
-
+from app.source.sources import add_source
 
 def open_source_link_editor(table_name, record_id, field_name=None):
     """Launch a popup window to manage Source_Link records."""
@@ -31,6 +31,21 @@ def open_source_link_editor(table_name, record_id, field_name=None):
     def fetch_sources():
         cur.execute("SELECT id, title FROM Sources ORDER BY id")
         return cur.fetchall()
+
+    def refresh_source_list(selected_id=None):
+        """Reload the source dropdown and optionally select ``selected_id``."""
+        sources = fetch_sources()
+        source_dropdown['values'] = [title for _, title in sources]
+        source_dropdown.ids = {title: sid for sid, title in sources}
+        if selected_id:
+            for title, sid in source_dropdown.ids.items():
+                if sid == selected_id:
+                    source_var.set(title)
+                    break
+
+    def add_new_source():
+        new_id = add_source(win)
+        refresh_source_list(new_id)
 
     def refresh_tree():
         """Reload the tree with Source_Link records for this table/record."""
@@ -152,11 +167,10 @@ def open_source_link_editor(table_name, record_id, field_name=None):
     ttk.Label(win, text="Source:").grid(row=1, column=0, sticky="e")
     source_var = tk.StringVar()
     source_dropdown = ttk.Combobox(win, textvariable=source_var, width=40)
-    sources = fetch_sources()
-    source_dropdown['values'] = [title for _, title in sources]
-    source_dropdown.ids = {title: sid for sid, title in sources}
-    source_dropdown.grid(row=1, column=1, columnspan=3, sticky="we", padx=5, pady=2)
-
+    source_dropdown.grid(row=1, column=1, columnspan=2, sticky="we", padx=5, pady=2)
+    ttk.Button(win, text="+ New Source", command=add_new_source).grid(row=1, column=3, sticky="w", padx=5, pady=2)
+    refresh_source_list()
+    
     ttk.Label(win, text="Field:").grid(row=2, column=0, sticky="e")
     field_var = tk.StringVar(value=field_name or "")
     field_entry = ttk.Entry(win, textvariable=field_var, width=40)

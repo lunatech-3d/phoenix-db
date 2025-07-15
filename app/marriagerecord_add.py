@@ -6,7 +6,7 @@ import sys
 #Local Imports
 from app.config import DB_PATH, PATHS
 from app.context_menu import create_context_menu
-from app.person_search import search_people as lookup_people
+from app.person_linkage import person_search_popup
 
 # Connect to the database
 connection = sqlite3.connect(DB_PATH)
@@ -27,7 +27,6 @@ def apply_context_menu_to_all_entries(container):
         elif widget.winfo_children():
             apply_context_menu_to_all_entries(widget)  # Recursively apply to child containers
 
-
 # Check if an ID is passed as a command-line argument
 person_id_arg = None
 if len(sys.argv) > 1:
@@ -36,62 +35,69 @@ if len(sys.argv) > 1:
     except ValueError:
         print("Invalid ID passed as argument.")
 
-def pre_populate_spouse_field(person_id):
-    # Fetch the person's name and other details for display
-    cursor.execute("SELECT first_name, last_name, birth_date FROM People WHERE id = ?", (person_id,))
-    person_info = cursor.fetchone()
+spouse1_id = None
+spouse2_id = None
 
-    if person_info:
-        formatted_info = f"{person_id}: {person_info[0]} {person_info[1]} | born - {person_info[2]}"
-        combo_person1_id.set(formatted_info)  # Populate Person1 ID
+def set_spouse1_id(pid):
+    global spouse1_id
+    if pid is None:
+        spouse1_display.config(text="(none)")
+        spouse1_id = None
+        return
+    cursor.execute(
+        "SELECT first_name, middle_name, last_name, married_name FROM People WHERE id = ?",
+        (pid,),
+    )
+    row = cursor.fetchone()
+    if row:
+        name_parts = [row[0], row[1], row[2]]
+        name = " ".join(p for p in name_parts if p)
+        if row[3]:
+            name += f" ({row[3]})"
+        spouse1_display.config(text=name)
+        spouse1_id = pid
     else:
-        print("Person ID not found in database.")
+        spouse1_display.config(text="(not found)")
+        spouse1_id = None
+
+def set_spouse2_id(pid):
+    global spouse2_id
+    if pid is None:
+        spouse2_display.config(text="(none)")
+        spouse2_id = None
+        return
+    cursor.execute(
+        "SELECT first_name, middle_name, last_name, married_name FROM People WHERE id = ?",
+        (pid,),
+    )
+    row = cursor.fetchone()
+    if row:
+        name_parts = [row[0], row[1], row[2]]
+        name = " ".join(p for p in name_parts if p)
+        if row[3]:
+            name += f" ({row[3]})"
+        spouse2_display.config(text=name)
+        spouse2_id = pid
+    else:
+        spouse2_display.config(text="(not found)")
+        spouse2_id = None
+
+def pre_populate_spouse_field(person_id):
+    set_spouse1_id(person_id)
 
 # Function to close the form
 def close_form():
     window.destroy()
 
-def search_people(last_name_entry, person_dropdown):
-    last_name = last_name_entry.get().strip()
-    results = lookup_people(
-        cursor,
-        columns="id, first_name, middle_name, last_name, married_name, birth_date, death_date",
-        last_name=last_name,
-    )
-    person_dropdown['values'] = [
-        f"{person[0]}: {person[1]} {person[2]} | born - {person[5]}" for person in results
-    ]
-    
-def fetch_people_data():
-    cursor.execute("SELECT id, last_name, first_name, birth_date FROM People ORDER BY last_name, first_name")
-    return [f"{row[0]}: {row[1]}, {row[2]} ({row[3]})" for row in cursor.fetchall()]
 
 def add_marriage_record():
-    # Extract selected person IDs from dropdown
-    person1_selection = combo_person1_id.get()
-    person2_selection = combo_person2_id.get()
+    
+    person1_id = spouse1_id
+    person2_id = spouse2_id
 
-    if not person1_selection or not person2_selection:
+    if not person1_id or not person2_id:
         messagebox.showerror("Error", "Please select both individuals for the marriage record.")
         return
-
-    person1_id = person1_selection.split(" : ")[0]
-    person2_id = person2_selection.split(" : ")[0]
-
-    # Extract IDs from the selection
-    person1_id = person1_selection.split(':')[0].strip() if person1_selection else None
-    person2_id = person2_selection.split(':')[0].strip() if person2_selection else None
-
-    # Convert the extracted IDs to integers
-    try:
-        person1_id = int(person1_id) if person1_id else None
-        person2_id = int(person2_id) if person2_id else None
-    except ValueError:
-        messagebox.showerror("Error", "Invalid ID format")
-        return
-
-    print(f"Person 1 ID: {person1_id}")
-    print(f"Person 2 ID: {person2_id}")
 
     # Validate person IDs
     for person_id in [person1_id, person2_id]:
@@ -139,35 +145,32 @@ x = (screen_width - window_width) // 2
 y = (screen_height - window_height) // 2
 window.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
-# Person1 Dropdown and Search
-label_person1_id = ttk.Label(window, text="Spouse1 ID:")
-label_person1_id.grid(row=0, column=0, padx=5, pady=5)
-combo_person1_id = ttk.Combobox(window, width=40, state='readonly')
-combo_person1_id.grid(row=0, column=1, padx=5, pady=5)
+# Spouse 1 selection
+label_person1_id = ttk.Label(window, text="Spouse 1:")
+label_person1_id.grid(row=0, column=0, padx=5, pady=5, sticky="e")
+spouse1_frame = ttk.Frame(window)
+spouse1_frame.grid(row=0, column=1, columnspan=3, padx=5, pady=5, sticky="w")
+spouse1_display = ttk.Label(spouse1_frame, text="(none)", width=40, relief="sunken", anchor="w")
+spouse1_display.pack(side="left", padx=(0,5))
+if person_id_arg is None:
+    ttk.Button(spouse1_frame, text="Lookup", command=lambda: person_search_popup(set_spouse1_id)).pack(side="left")
+    ttk.Button(spouse1_frame, text="Clear", command=lambda: set_spouse1_id(None)).pack(side="left")
+else:
+    set_spouse1_id(person_id_arg)
 
-# Call the function if person_id_arg is provided
+# Pre-populate if a person ID was provided
 if person_id_arg:
     pre_populate_spouse_field(person_id_arg)
-else: 
-    entry_person1_search = ttk.Entry(window)
-    entry_person1_search.grid(row=0, column=2, padx=5, pady=5)
-    button_person1_search = ttk.Button(window, text="Search", command=lambda: search_people(entry_person1_search, combo_person1_id))
-    button_person1_search.grid(row=0, column=3, padx=5, pady=5)
 
-# Person2 Dropdown and Search
-label_person2_id = ttk.Label(window, text="Spouse2 ID:")
-label_person2_id.grid(row=1, column=0, padx=5, pady=5)
-combo_person2_id = ttk.Combobox(window, width=40, state='readonly')
-combo_person2_id.grid(row=1, column=1, padx=5, pady=5)
-entry_person2_search = ttk.Entry(window)
-entry_person2_search.grid(row=1, column=2, padx=5, pady=5)
-button_person2_search = ttk.Button(window, text="Search", command=lambda: search_people(entry_person2_search, combo_person2_id))
-button_person2_search.grid(row=1, column=3, padx=5, pady=5)
-
-# Populate the dropdowns
-people_data = fetch_people_data()
-combo_person1_id['values'] = people_data
-combo_person2_id['values'] = people_data
+# Spouse 2 selection
+label_person2_id = ttk.Label(window, text="Spouse 2:")
+label_person2_id.grid(row=1, column=0, padx=5, pady=5, sticky="e")
+spouse2_frame = ttk.Frame(window)
+spouse2_frame.grid(row=1, column=1, columnspan=3, padx=5, pady=5, sticky="w")
+spouse2_display = ttk.Label(spouse2_frame, text="(none)", width=40, relief="sunken", anchor="w")
+spouse2_display.pack(side="left", padx=(0,5))
+ttk.Button(spouse2_frame, text="Lookup", command=lambda: person_search_popup(set_spouse2_id)).pack(side="left")
+ttk.Button(spouse2_frame, text="Clear", command=lambda: set_spouse2_id(None)).pack(side="left")
 
 # Separator on the form
 separator = ttk.Separator(window, orient='horizontal')

@@ -21,46 +21,82 @@ def refresh_sources():
         tree.insert("", "end", values=row)
     conn.close()
 
-def add_source(parent):
-    """Open a new window attached to ``parent`` to add a source."""
+    
+def add_source(parent, refresh_fn=None):
+    """Open a new window attached to ``parent`` to add a source.
+
+    Parameters
+    ----------
+    parent : tk.Widget
+        The parent window.
+    refresh_fn : callable, optional
+        Function to call after saving the source. This allows other modules to
+        refresh their UI when a new source is added.
+
+    Returns
+    -------
+    int | None
+        The ``id`` of the newly created source or ``None`` if the dialog was
+        closed without saving.
+    """
+
+    new_id = None
+
+
+
     def save_new_source():
-        # Implement saving logic here
+        nonlocal new_id
         conn = sqlite3.connect(DB_PATH)
         cur = conn.cursor()
-        cur.execute("INSERT INTO Sources (title, author, publisher, pub_date, note) VALUES (?, ?, ?, ?, ?)",
-                    (title_entry.get(), author_entry.get(), publisher_entry.get(), pub_date_entry.get(), note_entry.get()))
+        cur.execute(
+            "INSERT INTO Sources (title, author, publisher, pub_date, note) VALUES (?, ?, ?, ?, ?)",
+            (
+                title_entry.get(),
+                author_entry.get(),
+                publisher_entry.get(),
+                pub_date_entry.get(),
+                note_entry.get(),
+            ),
+        )
+        new_id = cur.lastrowid        
         conn.commit()
         conn.close()
         add_window.destroy()
-        refresh_sources()
-    
+         
     add_window = tk.Toplevel(parent)
     add_window.title("Add New Source")
+    add_window.geometry("800x220")
     
     # Entry fields
-    tk.Label(add_window, text="Title:").grid(row=0, column=0)
-    title_entry = tk.Entry(add_window)
-    title_entry.grid(row=0, column=1)
+    tk.Label(add_window, text="Title:").grid(row=0, column=0, sticky="w", pady=4)
+    title_entry = tk.Entry(add_window, width=100, justify="left")
+    title_entry.grid(row=0, column=1, sticky="w")
+
+    tk.Label(add_window, text="Author:").grid(row=1, column=0, sticky="w", pady=4)
+    author_entry = tk.Entry(add_window, width=50, justify="left")
+    author_entry.grid(row=1, column=1, sticky="w")
+
+    tk.Label(add_window, text="Publisher:").grid(row=2, column=0, sticky="w", pady=4)
+    publisher_entry = tk.Entry(add_window, width=50, justify="left")
+    publisher_entry.grid(row=2, column=1, sticky="w")
+
+    tk.Label(add_window, text="Publication Date:").grid(row=3, column=0, sticky="w", pady=4)
+    pub_date_entry = tk.Entry(add_window, width=30, justify="left")
+    pub_date_entry.grid(row=3, column=1, sticky="w")
+
+    tk.Label(add_window, text="Note:").grid(row=4, column=0, sticky="w", pady=4)
+    note_entry = tk.Entry(add_window, width=100, justify="left")
+    note_entry.grid(row=4, column=1, sticky="w")
     
-    tk.Label(add_window, text="Author:").grid(row=1, column=0)
-    author_entry = tk.Entry(add_window)
-    author_entry.grid(row=1, column=1)
+    tk.Button(add_window, text="Save", command=save_new_source).grid(row=5, column=1, pady=4)
     
-    tk.Label(add_window, text="Publisher:").grid(row=2, column=0)
-    publisher_entry = tk.Entry(add_window)
-    publisher_entry.grid(row=2, column=1)
-    
-    tk.Label(add_window, text="Publication Date:").grid(row=3, column=0)
-    pub_date_entry = tk.Entry(add_window)
-    pub_date_entry.grid(row=3, column=1)
-    
-    tk.Label(add_window, text="Note:").grid(row=4, column=0)
-    note_entry = tk.Entry(add_window)
-    note_entry.grid(row=4, column=1)
-    
-    tk.Button(add_window, text="Save", command=save_new_source).grid(row=5, column=1)
-    
-    add_window.mainloop()
+    add_window.grab_set()
+    parent.wait_window(add_window)
+
+    if refresh_fn:
+        refresh_fn()
+
+    return new_id
 
 def edit_source():
     """ Open a form to edit the selected source """
@@ -159,7 +195,7 @@ def launch_gui():
     tree.pack(fill=tk.BOTH, expand=True)
 
     ttk.Button(window, text="Refresh Sources", command=refresh_sources).pack(side=tk.LEFT)
-    ttk.Button(window, text="Add Source", command=lambda: add_source(window)).pack(side=tk.LEFT)
+    ttk.Button(window, text="Add Source", command=lambda: add_source(window, refresh_sources)).pack(side=tk.LEFT)    
     ttk.Button(window, text="Edit Source", command=edit_source).pack(side=tk.LEFT)
     ttk.Button(window, text="Delete Source", command=delete_source).pack(side=tk.LEFT)
 
