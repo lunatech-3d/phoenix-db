@@ -626,6 +626,17 @@ def open_family_linkage_window(cursor, census_id, res_group_id, census_year, tow
                 print(f"Error in save_data_changes: {e}")
                 return False
 
+        # Call the inner function and commit if successful
+        if save_data_changes():
+            connection.commit()
+            refresh_family_treeviews()
+            temp_links.clear()
+            temp_unlinks.clear()
+            temp_orders.clear()
+            messagebox.showinfo("Success", "Changes saved successfully.")
+        else:
+            messagebox.showerror("Error", "Failed to save changes.")
+    
     # END OF NEW CODE
 
     def add_non_family_to_census():

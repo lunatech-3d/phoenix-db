@@ -13,6 +13,8 @@ import argparse
 #Local Imports
 from app.context_menu import create_context_menu
 from app.config import DB_PATH, PATHS
+from app.person_linkage import person_search_popup
+
 
 parser = argparse.ArgumentParser(description="Add a new person record")
 parser.add_argument("--father", type=int, help="Pre-fill Father ID")
@@ -49,6 +51,44 @@ def apply_context_menu_to_all_entries(container):
             apply_context_menu_to_all_entries(widget)
 # Function to close the form
 
+def set_father_id(pid):
+    """Callback to set the selected father ID and update label."""
+    if pid is None:
+        father_var.set("")
+        father_display.config(text="(none)")
+        return
+    cursor.execute(
+        "SELECT first_name, middle_name, last_name FROM People WHERE id=?",
+        (pid,),
+    )
+    row = cursor.fetchone()
+    if row:
+        name = " ".join(part for part in row if part)
+        father_display.config(text=name)
+        father_var.set(str(pid))
+    else:
+        father_display.config(text="(not found)")
+        father_var.set("")
+
+def set_mother_id(pid):
+    """Callback to set the selected mother ID and update label."""
+    if pid is None:
+        mother_var.set("")
+        mother_display.config(text="(none)")
+        return
+    cursor.execute(
+        "SELECT first_name, middle_name, last_name FROM People WHERE id=?",
+        (pid,),
+    )
+    row = cursor.fetchone()
+    if row:
+        name = " ".join(part for part in row if part)
+        mother_display.config(text=name)
+        mother_var.set(str(pid))
+    else:
+        mother_display.config(text="(not found)")
+        mother_var.set("")
+
 def close_form():
     window.destroy()
 
@@ -60,8 +100,8 @@ def add_record():
     title = entry_title.get().strip()
     nick_name = entry_nick_name.get().strip()
     married_name = entry_married_name.get().strip()
-    father = int(entry_father.get().strip()) if entry_father.get().strip() else None
-    mother = int(entry_mother.get().strip()) if entry_mother.get().strip() else None
+    father = int(father_var.get()) if father_var.get().strip() else None
+    mother = int(mother_var.get()) if mother_var.get().strip() else None
     birth_date = entry_birth_date.get().strip()
     birth_location = entry_birth_location.get().strip()
     death_date = entry_death_date.get().strip()
@@ -124,8 +164,10 @@ def add_record():
     entry_title.delete(0, tk.END)
     entry_nick_name.delete(0, tk.END)
     entry_married_name.delete(0, tk.END)
-    entry_father.delete(0, tk.END)
-    entry_mother.delete(0, tk.END)
+    father_var.set("")
+    mother_var.set("")
+    father_display.config(text="(none)")
+    mother_display.config(text="(none)")
     entry_birth_date.delete(0, tk.END)
     entry_birth_location.delete(0, tk.END)
     entry_death_date.delete(0, tk.END)
@@ -149,12 +191,16 @@ window.title("Add Record")
 
 # Set the window size and position
 window_width = 800
-window_height = 500
+window_height = 600
 screen_width = window.winfo_screenwidth()
 screen_height = window.winfo_screenheight()
 x = (screen_width - window_width) // 2
 y = (screen_height - window_height) // 2
 window.geometry(f"{window_width}x{window_height}+{x}+{y}")
+
+# Variables to store selected parent IDs
+father_var = tk.StringVar()
+mother_var = tk.StringVar()
 
 # Create a frame for the form fields
 frame_form = ttk.Frame(window)
@@ -207,134 +253,140 @@ entry_married_name.grid(row=1, column=5, padx=5, pady=5)
 separator = ttk.Separator(frame_newperson, orient='horizontal')
 separator.grid(row=2, columnspan=6, pady=10, sticky='ew')
 
-# Father entry
+# Father label
 label_father = ttk.Label(frame_newperson, text="Father:")
-label_father.grid(row=3, column=2, padx=5, pady=5)
-entry_father = ttk.Entry(frame_newperson)
-entry_father.grid(row=3, column=3, padx=5, pady=5)
+label_father.grid(row=3, column=0, padx=5, pady=5, sticky='e')
+father_display = ttk.Label(frame_newperson, text="(none)", width=20, relief='sunken', anchor='w')
+father_display.grid(row=3, column=1, padx=5, pady=5, sticky='w')
+ttk.Button(frame_newperson, text="Lookup", command=lambda: person_search_popup(set_father_id)).grid(row=3, column=2, padx=5, pady=5)
 
-# Mother entry
+# Mother label
 label_mother = ttk.Label(frame_newperson, text="Mother:")
-label_mother.grid(row=3, column=4, padx=5, pady=5)
-entry_mother = ttk.Entry(frame_newperson)
-entry_mother.grid(row=3, column=5, padx=5, pady=5)
-
-# Birth Date entry
-label_birth_date = ttk.Label(frame_newperson, text="Birth Date:")
-label_birth_date.grid(row=4, column=0, padx=5, pady=5)
-entry_birth_date = ttk.Entry(frame_newperson)
-entry_birth_date.grid(row=4, column=1, padx=5, pady=5)
-
-if prefill_father is not None:
-    entry_father.insert(0, str(prefill_father))
-if prefill_mother is not None:
-    entry_mother.insert(0, str(prefill_mother))
-
-# Birth Location entry
-label_birth_location = ttk.Label(frame_newperson, text="Birth Location:")
-label_birth_location.grid(row=4, column=2, padx=5, pady=5)
-entry_birth_location = ttk.Entry(frame_newperson)
-entry_birth_location.grid(row=4, column=3, padx=5, pady=5)
-
-# Death Date entry
-label_death_date = ttk.Label(frame_newperson, text="Death Date:")
-label_death_date.grid(row=5, column=0, padx=5, pady=5)
-entry_death_date = ttk.Entry(frame_newperson)
-entry_death_date.grid(row=5, column=1, padx=5, pady=5)
-
-# Death Location entry
-label_death_location = ttk.Label(frame_newperson, text="Death Location:")
-label_death_location.grid(row=5, column=2, padx=5, pady=5)
-entry_death_location = ttk.Entry(frame_newperson)
-entry_death_location.grid(row=5, column=3, padx=5, pady=5)
-
-# Death Cause entry
-label_death_cause = ttk.Label(frame_newperson, text="Death Cause:")
-label_death_cause.grid(row=6, column=0, padx=5, pady=5)
-entry_death_cause = ttk.Entry(frame_newperson)
-entry_death_cause.grid(row=6, column=1, padx=5, pady=5)
-
-# Obituary Link entry
-label_obit_link = ttk.Label(frame_newperson, text="Obituary Link:")
-label_obit_link.grid(row=6, column=2, padx=5, pady=5)
-entry_obit_link = ttk.Entry(frame_newperson)
-entry_obit_link.grid(row=6, column=3, padx=5, pady=5)
-
-# Buried Date entry
-label_buried_date = ttk.Label(frame_newperson, text="Buried Date:")
-label_buried_date.grid(row=7, column=0, padx=5, pady=5)
-entry_buried_date = ttk.Entry(frame_newperson)
-entry_buried_date.grid(row=7, column=1, padx=5, pady=5)
-
-# Buried Location entry
-label_buried_location = ttk.Label(frame_newperson, text="Buried Location:")
-label_buried_location.grid(row=7, column=2, padx=5, pady=5)
-entry_buried_location = ttk.Entry(frame_newperson)
-entry_buried_location.grid(row=7, column=3, padx=5, pady=5)
-
-# Buried Block entry (new field)
-label_buried_block = ttk.Label(frame_newperson, text="Buried Block:")
-label_buried_block.grid(row=7, column=4, padx=5, pady=5)
-entry_buried_block = ttk.Entry(frame_newperson)
-entry_buried_block.grid(row=7, column=5, padx=5, pady=5)
-
-# Buried Notes entry
-label_buried_notes = ttk.Label(frame_newperson, text="Buried Notes:")
-label_buried_notes.grid(row=8, column=0, padx=5, pady=5)
-entry_buried_notes = ttk.Entry(frame_newperson)
-entry_buried_notes.grid(row=8, column=1, padx=5, pady=5)
-
-# Buried Source entry
-label_buried_source = ttk.Label(frame_newperson, text="Buried Source:")
-label_buried_source.grid(row=8, column=2, padx=5, pady=5)
-entry_buried_source = ttk.Entry(frame_newperson)
-entry_buried_source.grid(row=8, column=3, padx=5, pady=5)
-
-# Buried Link entry
-label_buried_link = ttk.Label(frame_newperson, text="Buried Link:")
-label_buried_link.grid(row=9, column=0, padx=5, pady=5)
-entry_buried_link = ttk.Entry(frame_newperson)
-entry_buried_link.grid(row=9, column=1, padx=5, pady=5)
-
-# Buried Tour Link entry (new field)
-label_buried_tour_link = ttk.Label(frame_newperson, text="Buried Tour Link:")
-label_buried_tour_link.grid(row=9, column=2, padx=5, pady=5)
-entry_buried_tour_link = ttk.Entry(frame_newperson)
-entry_buried_tour_link.grid(row=9, column=3, padx=5, pady=5)
+label_mother.grid(row=4, column=0, padx=5, pady=5, sticky='e')
+mother_display = ttk.Label(frame_newperson, text="(none)", width=20, relief='sunken', anchor='w')
+mother_display.grid(row=4, column=1, padx=5, pady=5, sticky='w')
+ttk.Button(frame_newperson, text="Lookup", command=lambda: person_search_popup(set_mother_id)).grid(row=4, column=2, padx=5, pady=5)
 
 # Separator on the form
 separator = ttk.Separator(frame_newperson, orient='horizontal')
-separator.grid(row=10,columnspan=6, pady=10, sticky='ew')
+separator.grid(row=7, columnspan=6, pady=10, sticky='ew')
+
+# Birth Date entry
+label_birth_date = ttk.Label(frame_newperson, text="Birth Date:")
+label_birth_date.grid(row=8, column=0, padx=5, pady=5)
+entry_birth_date = ttk.Entry(frame_newperson)
+entry_birth_date.grid(row=8, column=1, padx=5, pady=5)
+
+if prefill_father is not None:
+    set_father_id(prefill_father)
+if prefill_mother is not None:
+    set_mother_id(prefill_mother)
+
+# Birth Location entry
+label_birth_location = ttk.Label(frame_newperson, text="Birth Location:")
+label_birth_location.grid(row=8, column=2, padx=5, pady=5)
+entry_birth_location = ttk.Entry(frame_newperson)
+entry_birth_location.grid(row=8, column=3, padx=5, pady=5)
+
+# Death Date entry
+label_death_date = ttk.Label(frame_newperson, text="Death Date:")
+label_death_date.grid(row=9, column=0, padx=5, pady=5)
+entry_death_date = ttk.Entry(frame_newperson)
+entry_death_date.grid(row=9, column=1, padx=5, pady=5)
+
+# Death Location entry
+label_death_location = ttk.Label(frame_newperson, text="Death Location:")
+label_death_location.grid(row=9, column=2, padx=5, pady=5)
+entry_death_location = ttk.Entry(frame_newperson)
+entry_death_location.grid(row=9, column=3, padx=5, pady=5)
+
+# Death Cause entry
+label_death_cause = ttk.Label(frame_newperson, text="Death Cause:")
+label_death_cause.grid(row=10, column=0, padx=5, pady=5)
+entry_death_cause = ttk.Entry(frame_newperson)
+entry_death_cause.grid(row=10, column=1, padx=5, pady=5)
+
+# Obituary Link entry
+label_obit_link = ttk.Label(frame_newperson, text="Obituary Link:")
+label_obit_link.grid(row=10, column=2, padx=5, pady=5)
+entry_obit_link = ttk.Entry(frame_newperson)
+entry_obit_link.grid(row=10, column=3, padx=5, pady=5)
+
+# Buried Date entry
+label_buried_date = ttk.Label(frame_newperson, text="Buried Date:")
+label_buried_date.grid(row=11, column=0, padx=5, pady=5)
+entry_buried_date = ttk.Entry(frame_newperson)
+entry_buried_date.grid(row=11, column=1, padx=5, pady=5)
+
+# Buried Location entry
+label_buried_location = ttk.Label(frame_newperson, text="Buried Location:")
+label_buried_location.grid(row=11, column=2, padx=5, pady=5)
+entry_buried_location = ttk.Entry(frame_newperson)
+entry_buried_location.grid(row=11, column=3, padx=5, pady=5)
+
+# Buried Block entry (new field)
+label_buried_block = ttk.Label(frame_newperson, text="Buried Block:")
+label_buried_block.grid(row=11, column=4, padx=5, pady=5)
+entry_buried_block = ttk.Entry(frame_newperson)
+entry_buried_block.grid(row=11, column=5, padx=5, pady=5)
+
+# Buried Notes entry
+label_buried_notes = ttk.Label(frame_newperson, text="Buried Notes:")
+label_buried_notes.grid(row=12, column=0, padx=5, pady=5)
+entry_buried_notes = ttk.Entry(frame_newperson)
+entry_buried_notes.grid(row=12, column=1, padx=5, pady=5)
+
+# Buried Source entry
+label_buried_source = ttk.Label(frame_newperson, text="Buried Source:")
+label_buried_source.grid(row=12, column=2, padx=5, pady=5)
+entry_buried_source = ttk.Entry(frame_newperson)
+entry_buried_source.grid(row=12, column=3, padx=5, pady=5)
+
+# Buried Link entry
+label_buried_link = ttk.Label(frame_newperson, text="Buried Link:")
+label_buried_link.grid(row=13, column=0, padx=5, pady=5)
+entry_buried_link = ttk.Entry(frame_newperson)
+entry_buried_link.grid(row=13, column=1, padx=5, pady=5)
+
+# Buried Tour Link entry (new field)
+label_buried_tour_link = ttk.Label(frame_newperson, text="Buried Tour Link:")
+label_buried_tour_link.grid(row=13, column=2, padx=5, pady=5)
+entry_buried_tour_link = ttk.Entry(frame_newperson)
+entry_buried_tour_link.grid(row=13, column=3, padx=5, pady=5)
+
+# Separator on the form
+separator = ttk.Separator(frame_newperson, orient='horizontal')
+separator.grid(row=14,columnspan=6, pady=10, sticky='ew')
 
 # Business entry
 label_business = ttk.Label(frame_newperson, text="Business:")
-label_business.grid(row=11, column=0, padx=5, pady=5)
+label_business.grid(row=15, column=0, padx=5, pady=5)
 entry_business = ttk.Entry(frame_newperson)
-entry_business.grid(row=11, column=1, padx=5, pady=5)
+entry_business.grid(row=15, column=1, padx=5, pady=5)
 
 # Occupation entry
 label_occupation = ttk.Label(frame_newperson, text="Occupation:")
-label_occupation.grid(row=12, column=0, padx=5, pady=5)
+label_occupation.grid(row=16, column=0, padx=5, pady=5)
 entry_occupation = ttk.Entry(frame_newperson)
-entry_occupation.grid(row=12, column=1, padx=5, pady=5)
+entry_occupation.grid(row=16, column=1, padx=5, pady=5)
 
 #Bio entry
 label_bio = ttk.Label(frame_newperson, text="Bio:")
-label_bio.grid(row=13, column=0, padx=5, pady=5)
+label_bio.grid(row=17, column=0, padx=5, pady=5)
 entry_bio = ttk.Entry(frame_newperson)
-entry_bio.grid(row=13, column=1, padx=5, pady=5)
+entry_bio.grid(row=17, column=1, padx=5, pady=5)
 
 #Notes entry
 label_notes = ttk.Label(frame_newperson, text="Notes:")
-label_notes.grid(row=14, column=0, padx=5, pady=5)
+label_notes.grid(row=18, column=0, padx=5, pady=5)
 entry_notes = ttk.Entry(frame_newperson)
-entry_notes.grid(row=14, column=1, padx=5, pady=5)
+entry_notes.grid(row=18, column=1, padx=5, pady=5)
 
 apply_context_menu_to_all_entries(frame_newperson)
 
 # Create a frame for the buttons
 frame_buttons = ttk.Frame(frame_newperson)
-frame_buttons.grid(row=15, columnspan=2, pady=10)  # Adjust row and columnspan as needed
+frame_buttons.grid(row=19, columnspan=2, pady=10)  # Adjust row and columnspan as needed
 
 # Add Button
 button_add = ttk.Button(frame_buttons, text="Add", command=add_record)
