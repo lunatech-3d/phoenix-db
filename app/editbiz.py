@@ -14,6 +14,7 @@ from app.context_menu import create_context_menu, apply_context_menu_to_all_entr
 from app.person_linkage import person_search_popup
 from app.biz_employees import open_employee_editor
 from app.movie.edit_showing import open_edit_showing_form
+from app.biz_linkage import open_biz_linkage_popup
 
 connection = sqlite3.connect(DB_PATH)
 cursor = connection.cursor()
@@ -1491,41 +1492,9 @@ class EditBusinessForm:
             menu.tk_popup(x, y)
 
     def update_add_menu_state(self):
-        # Placeholder to refresh menu; method exists for symmetry
+        """Refresh any dynamic UI elements when tabs are added or removed."""
         pass
-    
-        # Query all other businesses
-        self.cursor.execute("""
-            SELECT biz_id, biz_name, start_date, end_date
-            FROM Biz
-            WHERE biz_id != ?
-            ORDER BY biz_name
-        """, (self.biz_id or -1,))
-        records = self.cursor.fetchall()
-
-        def make_label(name, start, end):
-            date_str = ""
-            if start and end:
-                date_str = f" ({start}–{end})"
-            elif start:
-                date_str = f" ({start}–)"
-            elif end:
-                date_str = f" (–{end})"
-            return f"{name}{date_str}"
-
-        preceded_list = []
-        succeeded_list = []
-
-        for biz_id, name, start, end in records:
-            label = make_label(name, start, end)
-            preceded_list.append(label)
-            succeeded_list.append(label)
-            self.preceded_by_id_map[label] = biz_id
-            self.succeeded_by_id_map[label] = biz_id
-
-        self.relationship_dropdowns['preceded_by']['values'] = preceded_list
-        self.relationship_dropdowns['succeeded_by']['values'] = succeeded_list
-
+         
 
     def load_data(self):
         # Load Biz main fields

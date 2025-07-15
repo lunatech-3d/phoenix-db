@@ -9,11 +9,8 @@ from app.config import DB_PATH, PATHS
 from app.date_utils import parse_date_input, format_date_for_display
 from app.biz_linkage import open_biz_linkage_popup
 
-
-DB_PATH = "phoenix.db"
-
 class OwnershipForm:
-    def __init__(self, root, person_id=None, ownership_id=None):
+    def __init__(self, root, person_id=None, ownership_id=None, biz_id=None):
         self.conn = sqlite3.connect(DB_PATH)
         self.cursor = self.conn.cursor()
         self.person_id = person_id
@@ -83,8 +80,6 @@ class OwnershipForm:
         ttk.Button(btn_frame, text="Save", command=self.save).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Cancel", command=self.root.destroy).pack(side="left", padx=5)
 
-
-    from date_utils import format_date_for_display  # Ensure this is imported
 
     def load_data(self):
         self.cursor.execute("""
@@ -170,24 +165,27 @@ class OwnershipForm:
         self.root.destroy()
 
 
-def open_owner_editor(person_id=None, ownership_id=None, parent=None):
+def open_owner_editor(person_id=None, ownership_id=None, parent=None, biz_id=None):
     win = tk.Toplevel(parent) if parent else tk.Tk()
-    OwnershipForm(win, person_id=person_id, ownership_id=ownership_id)
+    OwnershipForm(win, person_id=person_id, ownership_id=ownership_id, biz_id=biz_id)
     if not parent:
         win.mainloop()
 
 def main():
-    person_id = None
-    ownership_id = None
-    args = sys.argv[1:]
-    for i in range(len(args)):
-        if args[i] == "--for-person":
-            person_id = int(args[i+1])
-        if args[i] == "--edit-ownership":
-            ownership_id = int(args[i+1])
+    import argparse
+    parser = argparse.ArgumentParser(description="Business Ownership Editor")
+    parser.add_argument("--for-person", type=int, help="Person ID to add ownership for")
+    parser.add_argument("--edit-ownership", type=int, help="Ownership ID to edit")
+    parser.add_argument("--for-biz", type=int, help="Preselect Business ID")
+    args = parser.parse_args()
 
     root = tk.Tk()
-    app = OwnershipForm(root, person_id=person_id, ownership_id=ownership_id)
+    app = OwnershipForm(
+        root,
+        person_id=args.for_person,
+        ownership_id=args.edit_ownership,
+        biz_id=args.for_biz,
+    )
     root.mainloop()
 
 if __name__ == "__main__":
