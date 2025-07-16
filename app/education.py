@@ -167,7 +167,9 @@ def open_edit_education_window(education_id, connection, refresh_callback=None):
     top.focus_force()
 
 
-def initialize_education_section(parent_frame, connection, person_id):
+def initialize_education_section(
+    parent_frame, connection, person_id, refresh_tab_callback=None, init_callback=True
+):
     """Create the Education tab components and return the tree widget."""
     columns = ("id", "School", "Year", "Degree", "Field", "Position", "Notes")
     tree = ttk.Treeview(parent_frame, columns=columns, show="headings", height=8)
@@ -184,8 +186,10 @@ def initialize_education_section(parent_frame, connection, person_id):
     btn_frame = ttk.Frame(parent_frame)
     btn_frame.pack(fill="x", padx=5, pady=5)
 
-    def refresh():
+    def refresh(run_callback=True):
         load_education_records(connection.cursor(), tree, person_id)
+        if run_callback and refresh_tab_callback:
+            refresh_tab_callback()
 
     def add_record():
         open_add_education_window(person_id, connection, refresh)
@@ -216,5 +220,5 @@ def initialize_education_section(parent_frame, connection, person_id):
 
     tree.bind("<Double-1>", lambda e: edit_record())
 
-    refresh()
+    refresh(run_callback=init_callback)
     return tree

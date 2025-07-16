@@ -774,7 +774,11 @@ def refresh_education_tab():
 
     if education_tab_frame is None:
         if rows:
-            create_education_tab(_education_notebook, _education_person_id)
+            create_education_tab(
+                _education_notebook,
+                _education_person_id,
+                init_callback=False,
+            )
         return
 
     load_education_records(cur, education_tree, _education_person_id)
@@ -1792,7 +1796,7 @@ def open_media_url(event, tree):
 # START OF THE EDUCATION TAB CODE
 # -------------------------------
 
-def create_education_tab(notebook, person_id):
+def create_education_tab(notebook, person_id, init_callback=False):
     global education_tab_frame, education_tree, _education_notebook, _education_person_id
     _education_notebook = notebook
     _education_person_id = person_id
@@ -1803,7 +1807,13 @@ def create_education_tab(notebook, person_id):
     frame_education = ttk.Frame(notebook)
     notebook.add(frame_education, text='Education/Career')
 
-    tree = initialize_education_section(frame_education, connection, person_id)
+    tree = initialize_education_section(
+        frame_education,
+        connection,
+        person_id,
+        refresh_tab_callback=refresh_education_tab,
+        init_callback=init_callback,
+    )
     education_tree = tree
     load_education_records(connection.cursor(), tree, person_id)
     return frame_education
@@ -2619,6 +2629,9 @@ frame_form.grid_columnconfigure(0, weight=1)
 notebook = ttk.Notebook(frame_form)
 notebook.grid(row=0, column=0, sticky="nsew")
 
+_education_notebook = notebook
+_education_person_id = person_record[0]
+
 bold_font = font.Font(weight="bold")
 
 # Add the Vital tab
@@ -2634,7 +2647,7 @@ person_id = person_record[0]
 bio = person_record[20]
 create_narrative_tab(notebook, bio, person_id)
 
-create_family_tab(notebook, person_record[0])
+# create_family_tab(notebook, person_record[0])
 
 # Show Home/Property only if residence data exists
 if has_residence_data(person_record[0]):
@@ -2642,7 +2655,11 @@ if has_residence_data(person_record[0]):
     
 #Display the Education tab only when education records exist
 if has_education_data(person_record[0]):
-    create_education_tab(notebook, person_record[0])
+    create_education_tab(
+        notebook,
+        person_record[0],
+        init_callback=False,
+    )
 
 create_business_tab(notebook, person_record[0])
 
