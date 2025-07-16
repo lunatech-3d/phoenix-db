@@ -468,7 +468,7 @@ window.config(menu=menu)
 file_menu = tk.Menu(menu, tearoff=False)
 menu.add_cascade(label="File", menu=file_menu)
 file_menu.add_command(label="Sources Table", command=view_sources)
-file_menu.add_command(label="Address Table", command=view_addresses)
+file_menu.add_command(label="Address Management", command=open_address_management)
 file_menu.add_command(label="Business Management", command=open_business_management)
 file_menu.add_command(label="Institution Management", command=open_inst_management)
 file_menu.add_command(label="Church Management", command=open_church_management)
@@ -480,7 +480,7 @@ file_menu.add_command(label="Census Record Table", command=view_census_recs)
 file_menu.add_command(label="Export",command=export_data)
 file_menu.add_command(label="Exit", command=close_form)
 
-file_menu.add_command(label="Address Management", command=open_address_management)
+
 
 # Groups Menu
 groups_menu = tk.Menu(menu, tearoff=False)

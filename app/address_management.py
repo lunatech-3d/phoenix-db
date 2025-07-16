@@ -22,8 +22,9 @@ def populate_tree(records):
 
     for record in records:
         try:
-            # Insert the record into the treeview
-            tree.insert("", tk.END, values=record)
+            # The first field is the internal address_id which we use as the iid
+            # so it can be retrieved for edits/deletes without displaying it.
+            tree.insert("", tk.END, iid=record[0], values=record[1:9])
         except Exception as e:
             print(f"Failed to insert record {record}: {e}")  # Error handling
 
@@ -54,59 +55,93 @@ def display_all_records():
     query = "SELECT * FROM Address"
     display_records(query)
 
-# Function to add a new address with all fields
-def add_address():
-    # Create a new window for address input
-    add_window = tk.Toplevel()
-    add_window.title("Add New Address")
-    
-    # Create labels and entry fields for all columns in the Address table
+# Helper to open the add/edit window. If ``address_id`` is provided the
+# existing record will be loaded and updated on save.
+def open_address_form(address_id=None):
+    form = tk.Toplevel()
+    form.title("Edit Address" if address_id else "Add New Address")
+
     labels = [
-        "Address", "Latitude", "Longitude", "Start Date", "End Date",
-        "Old Address", "Parent Address ID", "Parcel ID", "Geometry"
+        "Address",
+        "Latitude",
+        "Longitude",
+        "Start Date",
+        "End Date",
+        "Old Address",
+        "Parent Address ID",
+        "Parcel ID",
+        "Geometry",
     ]
     
     entries = {}
     for idx, label_text in enumerate(labels):
-        label = ttk.Label(add_window, text=label_text)
-        label.grid(row=idx, column=0, padx=5, pady=5, sticky=tk.E)
-        
-        entry = ttk.Entry(add_window)
+        ttk.Label(form, text=label_text).grid(row=idx, column=0, padx=5, pady=5, sticky=tk.E)
+        entry = ttk.Entry(form)
         entry.grid(row=idx, column=1, padx=5, pady=5, sticky=tk.W)
         entries[label_text] = entry
 
-    # Function to save the new address
-    def save_address():
-        # Collect values from entry fields
-        address_data = {label: entry.get() for label, entry in entries.items()}
+    if address_id:
+        cursor.execute("SELECT address, lat, long, start_date, end_date, old_address, parent_address_id, parcel_id, geometry FROM Address WHERE address_id = ?", (address_id,))
+        row = cursor.fetchone()
+        if row:
+            for key, value in zip(labels, row):
+                entries[key].insert(0, value if value is not None else "")
 
-        # Check if address already exists
-        cursor.execute("SELECT * FROM Address WHERE address = ?", (address_data["Address"],))
-        existing_record = cursor.fetchone()
-        if existing_record:
-            messagebox.showerror("Error", "Address already exists in the database.")
-            return
+    def save():
+        values = [entries[label].get() for label in labels]
+        if address_id:
+            try:
+                cursor.execute(
+                    """
+                    UPDATE Address
+                       SET address=?, lat=?, long=?, start_date=?, end_date=?,
+                           old_address=?, parent_address_id=?, parcel_id=?, geometry=?
+                     WHERE address_id=?
+                    """,
+                    (*values, address_id),
+                )
+                connection.commit()
+                messagebox.showinfo("Success", "Address updated successfully.")
+                form.destroy()
+                display_all_records()
+            except Exception as e:
+                messagebox.showerror("Error", str(e))
+        else:
+            # Check if the address already exists to avoid duplicates
+            cursor.execute("SELECT 1 FROM Address WHERE address = ?", (entries["Address"].get(),))
+            if cursor.fetchone():
+                messagebox.showerror("Error", "Address already exists in the database.")
+                return
+            try:
+                cursor.execute(
+                    """
+                    INSERT INTO Address (address, lat, long, start_date, end_date, old_address,
+                                        parent_address_id, parcel_id, geometry)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    values,
+                )
+                connection.commit()
+                messagebox.showinfo("Success", "Address added successfully.")
+                form.destroy()
+                display_all_records()
+            except Exception as e:
+                messagebox.showerror("Error", str(e))
 
-        # Insert the new address into the database
-        try:
-            cursor.execute("""
-                INSERT INTO Address (address, lat, long, start_date, end_date, old_address, parent_address_id, parcel_id, geometry)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                address_data["Address"], address_data["Latitude"], address_data["Longitude"],
-                address_data["Start Date"], address_data["End Date"], address_data["Old Address"],
-                address_data["Parent Address ID"], address_data["Parcel ID"], address_data["Geometry"]
-            ))
-            connection.commit()
-            messagebox.showinfo("Success", "Address added successfully.")
-            add_window.destroy()
-            display_all_records()
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
+    ttk.Button(form, text="Save", command=save).grid(row=len(labels), column=0, columnspan=2, pady=10)
 
-    # Save button
-    save_button = ttk.Button(add_window, text="Save", command=save_address)
-    save_button.grid(row=len(labels), column=0, columnspan=2, pady=10)
+def add_address():
+    open_address_form()        
+
+
+def edit_address():
+    selected_item = tree.focus()
+    if not selected_item:
+        messagebox.showinfo("No Selection", "Please select an address to edit.")
+        return
+    # The iid of each row is the address_id
+    open_address_form(int(selected_item))
+
 
 # Function to delete an address
 def delete_address():
@@ -115,7 +150,8 @@ def delete_address():
         messagebox.showinfo("No Selection", "Please select an address to delete.")
         return
 
-    address_id = tree.item(selected_item)['values'][0]
+    # Use the iid which stores the address_id
+    address_id = int(selected_item)
 
     # Confirm the deletion
     if messagebox.askyesno("Confirm Delete", "Are you sure you want to delete the selected address?"):
@@ -169,13 +205,39 @@ x_scrollbar = ttk.Scrollbar(frame_tree, orient=tk.HORIZONTAL)
 y_scrollbar = ttk.Scrollbar(frame_tree)
 
 # Create a treeview to display the records
-tree = ttk.Treeview(frame_tree, xscrollcommand=x_scrollbar.set, yscrollcommand=y_scrollbar.set, show='headings')
-tree["columns"] = ("ID", "Address", "Latitude", "Longitude", "Start Date", "End Date", "Old Address", "Parent Address", "Parcel ID")
+tree = ttk.Treeview(
+    frame_tree,
+    xscrollcommand=x_scrollbar.set,
+    yscrollcommand=y_scrollbar.set,
+    show="headings",
+)
+tree["columns"] = (
+    "Address",
+    "Latitude",
+    "Longitude",
+    "Start Date",
+    "End Date",
+    "Old Address",
+    "Parent Address",
+    "Parcel ID",
+)
 
-# Define the headings and columns
+# Define readable column widths so the tree fits on screen
+COLUMN_WIDTHS = {
+    "Address": 300,
+    "Latitude": 80,
+    "Longitude": 80,
+    "Start Date": 100,
+    "End Date": 100,
+    "Old Address": 150,
+    "Parent Address": 120,
+    "Parcel ID": 100,
+}
+
 for col in tree["columns"]:
     tree.heading(col, text=col)
-    tree.column(col, anchor="w")
+    width = COLUMN_WIDTHS.get(col, 100)
+    tree.column(col, width=width, anchor="w")
 
 # Configure the scrollbars
 x_scrollbar.config(command=tree.xview)
@@ -184,6 +246,7 @@ y_scrollbar.config(command=tree.yview)
 y_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
 tree.pack(fill=tk.BOTH, expand=True)
+tree.bind("<Double-1>", lambda e: edit_address())
 
 # Populate the tree with all records initially
 display_all_records()
@@ -195,6 +258,10 @@ frame_buttons.pack(pady=10)
 # Add button
 button_add = ttk.Button(frame_buttons, text="Add Address", command=add_address)
 button_add.pack(side=tk.LEFT, padx=5)
+
+# Edit button
+button_edit = ttk.Button(frame_buttons, text="Edit Address", command=edit_address)
+button_edit.pack(side=tk.LEFT, padx=5)
 
 # Delete button
 button_delete = ttk.Button(frame_buttons, text="Delete Address", command=delete_address)
