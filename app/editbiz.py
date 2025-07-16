@@ -358,11 +358,18 @@ class EditBusinessForm:
 
         show_cols = ("showing_id", "title", "start", "end", "format", "event")
         self.showing_tree = ttk.Treeview(self.showings_frame, columns=show_cols, show="headings", height=5)
+        
+        show_widths = {
+            "title": 200,
+            "start": 100,
+            "end": 100,
+            "format": 100,
+            "event": 120,
+        }
+        
         for col in show_cols:
             self.showing_tree.heading(col, text=col.title(), command=lambda c=col: self.sort_showing_tree_by_column(c))
-            width = 0 if col == "showing_id" else 100
-            if col == "title":
-                width = 200
+            width = 0 if col == "showing_id" else show_widths.get(col, 100)
             self.showing_tree.column(col, width=width, anchor="w", stretch=(col != "showing_id"))
         self.showing_tree.pack(side="top", fill="x", expand=False, padx=5)
         self.showing_tree.bind("<Double-1>", self.on_showing_double_click)
@@ -606,7 +613,7 @@ class EditBusinessForm:
         selected = self.owner_tree.selection()
         if selected:
             values = self.owner_tree.item(selected[0])['values']
-            person_id = values[0]
+            person_id = values[1]
             if person_id:
                 self.master.destroy()  # Optional: close current biz form if needed
                 subprocess.Popen([sys.executable, "-m", "app.editme", str(person_id)])
@@ -1002,7 +1009,7 @@ class EditBusinessForm:
                         original_start_date, _ = parse_date_input(original_display_start)
                     else:
                         original_start_date = None
-                        
+
                     update_query = """
                         UPDATE BizEmployment SET
                             job_title = ?,
@@ -1066,7 +1073,7 @@ class EditBusinessForm:
         selected = self.employee_tree.selection()
         if selected:
             values = self.employee_tree.item(selected[0])['values']
-            person_id = values[0]
+            person_id = values[1]
             if person_id:
                 subprocess.Popen([sys.executable, "-m", "app.editme", str(person_id)])
 
@@ -1494,7 +1501,9 @@ class EditBusinessForm:
         menu = tk.Menu(self.master, tearoff=0)
         if not self.location_tab_added:
             menu.add_command(label="Add Location", command=self.add_location)
-        if not self.showing_tab_added:
+        category = self.entries.get("category")
+        is_theater = category and category.get().strip().lower() == "movie theater"
+        if not self.showing_tab_added and is_theater:
             menu.add_command(label="Add Showing", command=self.add_showing)
         if menu.index("end") is None:
             return

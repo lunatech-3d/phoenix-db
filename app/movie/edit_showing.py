@@ -2,11 +2,17 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
+import subprocess
 
 from app.config import DB_PATH
 from app.date_utils import parse_date_input
 from app.biz_linkage import open_biz_linkage_popup
 
+# edit_movie will be created in a later commit
+try:
+    from app.movie.edit_movie import open_edit_movie_form
+except Exception:
+    open_edit_movie_form = None
 
 class EditShowingForm:
     """Form to add or edit a movie showing."""
@@ -32,6 +38,7 @@ class EditShowingForm:
         ttk.Label(frame, text="Movie:").grid(row=0, column=0, padx=5, pady=5, sticky="e")
         self.movie_combo = ttk.Combobox(frame, width=40, state="readonly")
         self.movie_combo.grid(row=0, column=1, padx=5, pady=5, sticky="w")
+        ttk.Button(frame, text="Add", command=self.add_movie).grid(row=0, column=2, padx=5, pady=5)
         self.load_movie_options()
 
         # Theater selection via Biz lookup
@@ -89,6 +96,16 @@ class EditShowingForm:
             self.movie_combo.current(0)
             self.movie_id = self.movie_map[titles[0]]
         self.movie_combo.bind("<<ComboboxSelected>>", self._on_movie_select)
+
+    def add_movie(self):
+        """Launch the movie editor to add a new movie."""
+        if open_edit_movie_form:
+            win = open_edit_movie_form(parent=self.master)
+            if win:
+                self.master.wait_window(win)
+        else:
+            subprocess.Popen([sys.executable, "-m", "app.movie.edit_movie"])
+        self.load_movie_options()
 
     def _on_movie_select(self, event=None):
         title = self.movie_combo.get()
@@ -164,6 +181,20 @@ class EditShowingForm:
             "attendance_estimate": self.entries["attendance_estimate"].get().strip() or None,
             "notes": self.entries["notes"].get("1.0", tk.END).strip(),
         })
+
+        # Validate numeric fields
+        if data["ticket_price"]:
+            try:
+                data["ticket_price"] = float(data["ticket_price"])
+            except ValueError:
+                messagebox.showerror("Validation Error", "Ticket price must be a number.")
+                return
+
+        if data["attendance_estimate"]:
+            if not data["attendance_estimate"].isdigit():
+                messagebox.showerror("Validation Error", "Attendance estimate must be an integer.")
+                return
+            data["attendance_estimate"] = int(data["attendance_estimate"])
         cols = [
             "movie_id", "biz_id", "start_date", "end_date", "format",
             "special_event", "ticket_price", "attendance_estimate", "notes"

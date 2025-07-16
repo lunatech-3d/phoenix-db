@@ -5,7 +5,17 @@ import sys
 import subprocess
 
 from app.config import DB_PATH
-from app.date_utils import parse_date_input
+from app.date_utils import parse_date_input, format_date_for_display
+
+# Readable column widths for the showings list
+COLUMN_WIDTHS = {
+    "title": 200,
+    "theater": 180,
+    "start": 100,
+    "end": 100,
+    "format": 100,
+    "event": 120,
+}
 from app.biz_linkage import open_biz_linkage_popup
 
 # edit_showing will be created later
@@ -85,14 +95,12 @@ class MovieShowingBrowser:
         for col in columns:
             if col == "id":
                 self.tree.column("id", width=0, stretch=False)
-            else:
-                self.tree.heading(col, text=headings.get(col, col.title()), command=lambda c=col: self.sort_by_column(c))
-        self.tree.column("title", width=200, anchor="w")
-        self.tree.column("theater", width=180, anchor="w")
-        self.tree.column("start", width=80, anchor="center")
-        self.tree.column("end", width=80, anchor="center")
-        self.tree.column("format", width=100, anchor="center")
-        self.tree.column("event", width=120, anchor="w")
+            continue
+
+            self.tree.heading(col, text=headings.get(col, col.title()), command=lambda c=col: self.sort_by_column(c))
+            width = COLUMN_WIDTHS.get(col, 100)
+            anchor = "center" if col in ("start", "end", "format") else "w"
+            self.tree.column(col, width=width, anchor=anchor)
         self.tree.pack(fill="both", expand=True, padx=10, pady=10)
         self.tree.bind("<Double-1>", self.edit_showing)
 
@@ -151,7 +159,10 @@ class MovieShowingBrowser:
         try:
             self.cursor.execute(query, params)
             for row in self.cursor.fetchall():
-                self.tree.insert("", "end", values=row)
+                show_id, title, theater, start, end, fmt, event = row
+                start_disp = format_date_for_display(start, "EXACT") if start else ""
+                end_disp = format_date_for_display(end, "EXACT") if end else ""
+                self.tree.insert("", "end", values=(show_id, title, theater, start_disp, end_disp, fmt, event))
         except Exception as e:
             messagebox.showerror("Database Error", str(e))
 

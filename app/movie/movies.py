@@ -6,6 +6,16 @@ import subprocess
 import webbrowser
 
 from app.config import DB_PATH
+
+# Column widths for the movie listing
+COLUMN_WIDTHS = {
+    "title": 200,
+    "director": 150,
+    "year": 60,
+    "genre": 100,
+    "runtime": 80,
+    "rating": 60,
+}
 # edit_movie will be created in a later commit
 try:
     from app.movie.edit_movie import open_edit_movie_form
@@ -65,17 +75,14 @@ class MovieBrowser:
         }
 
         for col in columns:
-            if col == "movie_id" or col == "imdb":
+            if col in ("movie_id", "imdb"):
                 self.tree.column(col, width=0, stretch=False)
-            else:
-                self.tree.heading(col, text=headings.get(col, col.title()), command=lambda c=col: self.sort_by_column(c))
+            continue
 
-        self.tree.column("title", width=200, anchor="w")
-        self.tree.column("director", width=150, anchor="w")
-        self.tree.column("year", width=60, anchor="center")
-        self.tree.column("genre", width=100, anchor="w")
-        self.tree.column("runtime", width=80, anchor="center")
-        self.tree.column("rating", width=60, anchor="center")
+            self.tree.heading(col, text=headings.get(col, col.title()), command=lambda c=col: self.sort_by_column(c))
+            width = COLUMN_WIDTHS.get(col, 100)
+            anchor = "center" if col in ("year", "runtime", "rating") else "w"
+            self.tree.column(col, width=width, anchor=anchor)
 
         self.tree.pack(fill="both", expand=True, padx=10, pady=10)
         self.tree.bind("<Double-1>", self.edit_movie)
