@@ -22,14 +22,19 @@ def populate_tree(records):
 
     for record in records:
         try:
-            # The first field is the internal address_id which we use as the iid
-            # so it can be retrieved for edits/deletes without displaying it.
-            tree.insert("", tk.END, iid=record[0], values=record[1:9])
+            # The first column is ``address_id`` which becomes the tree iid so
+            # it can be retrieved for edits/deletes without displaying it. Any
+            # ``NULL`` values from the database are shown as an empty string.
+            values = ["" if v is None else v for v in record[1:]]
+            tree.insert("", tk.END, iid=record[0], values=values)
         except Exception as e:
             print(f"Failed to insert record {record}: {e}")  # Error handling
 
 # Function to display all records
-def display_records(query, parameters=[]):
+def display_records(query, parameters=None):
+    """Run ``query`` and show the results in the tree view."""
+    if parameters is None:
+        parameters = []
     cursor.execute(query, parameters)
     records = cursor.fetchall()
     populate_tree(records)
@@ -41,7 +46,10 @@ def search_addresses():
         messagebox.showinfo("No Input", "Please enter an address to search.")
         return
 
-    query = "SELECT * FROM Address WHERE address LIKE ?"
+    query = (
+        "SELECT address_id, address, lat, long, start_date, end_date, "
+        "old_address, parent_address_id, parcel_id FROM Address WHERE address LIKE ?"
+    )
     parameters = [f"%{address}%"]
     display_records(query, parameters)
 
@@ -52,7 +60,10 @@ def clear_search_fields():
 
 # Function to display all records
 def display_all_records():
-    query = "SELECT * FROM Address"
+    query = (
+        "SELECT address_id, address, lat, long, start_date, end_date, "
+        "old_address, parent_address_id, parcel_id FROM Address"
+    )
     display_records(query)
 
 # Helper to open the add/edit window. If ``address_id`` is provided the
@@ -224,9 +235,9 @@ tree["columns"] = (
 
 # Define readable column widths so the tree fits on screen
 COLUMN_WIDTHS = {
-    "Address": 300,
-    "Latitude": 80,
-    "Longitude": 80,
+    "Address": 200,
+    "Latitude": 90,
+    "Longitude": 90,
     "Start Date": 100,
     "End Date": 100,
     "Old Address": 150,
