@@ -1,11 +1,12 @@
 import sqlite3
-from typing import List, Any
+from typing import List, Any, Tuple, Union
 
 def search_people(
     cursor: sqlite3.Cursor,
     columns: str = "*",
+    return_query: bool = False,
     **criteria,
-) -> List[tuple]:
+) -> Union[List[tuple], Tuple[List[tuple], str, List[Any]]]:
     
     """Search the People table using dynamic criteria.
 
@@ -56,4 +57,9 @@ def search_people(
 
     query += " ORDER BY last_name, first_name"
     cursor.execute(query, params)
-    return cursor.fetchall()
+    results = cursor.fetchall()
+
+    if return_query:
+        return results, query, params
+
+    return results

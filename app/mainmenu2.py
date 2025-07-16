@@ -8,6 +8,7 @@ from tkinter import messagebox
 from tkinter import ttk
 from tkinter import filedialog
 from PIL import ImageTk, Image
+import re
 
 #Local Imports
 from app.config import DB_PATH, PATHS
@@ -135,11 +136,13 @@ def search_by_name():
     records = search_people(
         cursor,
         columns="*",
+        return_query=True,
         first_name=first_name,
         middle_name=middle_name,
         last_name=last_name,
     )
-    populate_tree(records)
+    records, query, params = records
+    display_records(query, params)
 
 
 def clear_search_fields():
@@ -153,15 +156,15 @@ def search_by_record_number():
     record_number = entry_record_number.get().strip()
     try:
         record_number = int(record_number)
-        records = search_people(
+        results = search_people(
             cursor,
             columns="*",
+            return_query=True,
             record_id=record_number,
         )
 
         if records:
-            tree.delete(*tree.get_children())
-            populate_tree(records)
+            display_records(query, params)
         else:
             print("No records found for the provided record number.")
             messagebox.showinfo("No Records", "No records found for the provided record number.")
@@ -357,8 +360,10 @@ def on_column_header_double_click(column):
         return
 
     # Run the current query, but add an ORDER BY clause to sort the results
-    sorted_query = current_query + f' ORDER BY "{db_column_name}" {order}'
-    print(f"Sorted query: {sorted_query}")
+    # Remove any existing ORDER BY clause and add a new one for sorting
+    base_query = re.sub(r"ORDER BY\s+.*$", "", current_query, flags=re.IGNORECASE)
+    sorted_query = base_query + f' ORDER BY "{db_column_name}" {order}'
+    # print(f"Sorted query: {sorted_query}")
     try:
         cursor.execute(sorted_query, current_parameters)
     except Exception as e:
