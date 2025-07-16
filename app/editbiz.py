@@ -780,7 +780,10 @@ class EditBusinessForm:
                         return
                     original_address_id = result[0]
                     original_display_start = self.location_existing[1]
-                    original_start_date, _ = parse_date_input(original_display_start)
+                    if original_display_start.strip():
+                        original_start_date, _ = parse_date_input(original_display_start)
+                    else:
+                        original_start_date = None
 
                     update_query = """
                         UPDATE BizLocHistory
@@ -995,22 +998,33 @@ class EditBusinessForm:
                 if self.employee_existing:
                     # Use original DB-formatted start_date for WHERE clause
                     original_display_start = self.employee_existing[3]
-                    original_start_date, _ = parse_date_input(original_display_start)
-
-                    self.cursor.execute("""
-                        UPDATE BizEmployment SET 
-                            job_title = ?, 
-                            start_date = ?, start_date_precision = ?, 
+                    if original_display_start.strip():
+                        original_start_date, _ = parse_date_input(original_display_start)
+                    else:
+                        original_start_date = None
+                        
+                    update_query = """
+                        UPDATE BizEmployment SET
+                            job_title = ?,
+                            start_date = ?, start_date_precision = ?,
                             end_date = ?, end_date_precision = ?, 
                             notes = ?
-                        WHERE biz_id = ? AND person_id = ? AND start_date = ?
-                    """, (
+                        WHERE biz_id = ? AND person_id = ?
+                    """
+                    params = [
                         title,
                         start_date, start_prec,
                         end_date, end_prec,
                         notes,
-                        self.biz_id, person_id, original_start_date
-                    ))
+                        self.biz_id, person_id
+                    ]
+                    if original_start_date is not None:
+                        update_query += " AND start_date = ?"
+                        params.append(original_start_date)
+                    else:
+                        update_query += " AND start_date IS NULL"
+
+                    self.cursor.execute(update_query, params)
                 else:
                     self.cursor.execute("""
                         INSERT INTO BizEmployment (
