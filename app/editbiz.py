@@ -1412,9 +1412,8 @@ class EditBusinessForm:
     def load_showings(self):
         self.showing_tree.delete(*self.showing_tree.get_children())
         self.cursor.execute(
-            """SELECT s.showing_id, m.title, s.start_date, s.end_date, s.format, s.special_event
-               FROM MovieShowings s JOIN Movies m ON s.movie_id=m.movie_id
-               WHERE s.biz_id=? ORDER BY s.start_date""",
+            """SELECT showing_id, title, start_date, end_date, format, special_event
+               FROM MovieShowings WHERE biz_id=? ORDER BY start_date""",
             (self.biz_id,)
         )
         rows = self.cursor.fetchall()

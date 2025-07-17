@@ -2,17 +2,9 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import sys
-import subprocess
 
 from app.config import DB_PATH
 from app.date_utils import parse_date_input
-from app.biz_linkage import open_biz_linkage_popup
-
-# edit_movie will be created in a later commit
-try:
-    from app.movie.edit_movie import open_edit_movie_form
-except Exception:
-    open_edit_movie_form = None
 
 class EditShowingForm:
     """Form to add or edit a movie showing."""
@@ -23,7 +15,6 @@ class EditShowingForm:
         self.conn = sqlite3.connect(DB_PATH)
         self.cursor = self.conn.cursor()
         self.showing_id = showing_id
-        self.movie_id = None
         self.biz_id = biz_id
         self.entries = {}
         self._setup_form()
@@ -34,19 +25,16 @@ class EditShowingForm:
         frame = ttk.Frame(self.master)
         frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Movie selection
-        ttk.Label(frame, text="Movie:").grid(row=0, column=0, padx=5, pady=5, sticky="e")
-        self.movie_combo = ttk.Combobox(frame, width=40, state="readonly")
-        self.movie_combo.grid(row=0, column=1, padx=5, pady=5, sticky="w")
-        ttk.Button(frame, text="Add", command=self.add_movie).grid(row=0, column=2, padx=5, pady=5)
-        self.load_movie_options()
+        # Movie title
+        ttk.Label(frame, text="Title:").grid(row=0, column=0, padx=5, pady=5, sticky="e")
+        self.entries["title"] = ttk.Entry(frame, width=40)
+        self.entries["title"].grid(row=0, column=1, padx=5, pady=5, sticky="w")
 
         # Theater selection via Biz lookup
         ttk.Label(frame, text="Theater:").grid(row=1, column=0, padx=5, pady=5, sticky="e")
         self.biz_display = ttk.Label(frame, text="(None)", width=40, relief="sunken", anchor="w")
         self.biz_display.grid(row=1, column=1, padx=5, pady=5, sticky="w")
-        ttk.Button(frame, text="Lookup", command=self.select_theater).grid(row=1, column=2, padx=5, pady=5)
-
+        
         # Start/End Dates
         ttk.Label(frame, text="Start Date:").grid(row=2, column=0, padx=5, pady=5, sticky="e")
         self.entries["start_date"] = ttk.Entry(frame, width=20)
@@ -76,55 +64,44 @@ class EditShowingForm:
         self.entries["attendance_estimate"] = ttk.Entry(frame, width=20)
         self.entries["attendance_estimate"].grid(row=7, column=1, padx=5, pady=5, sticky="w")
 
-        # Notes
-        ttk.Label(frame, text="Notes:").grid(row=8, column=0, padx=5, pady=5, sticky="ne")
-        self.entries["notes"] = tk.Text(frame, width=45, height=4)
-        self.entries["notes"].grid(row=8, column=1, padx=5, pady=5, sticky="w")
+        # Poster URL
+        ttk.Label(frame, text="Poster URL:").grid(row=8, column=0, padx=5, pady=5, sticky="e")
+        self.entries["poster_url"] = ttk.Entry(frame, width=40)
+        self.entries["poster_url"].grid(row=8, column=1, padx=5, pady=5, sticky="w")
 
+        # Overview URL
+        ttk.Label(frame, text="Overview URL:").grid(row=9, column=0, padx=5, pady=5, sticky="e")
+        self.entries["movie_overview_url"] = ttk.Entry(frame, width=40)
+        self.entries["movie_overview_url"].grid(row=9, column=1, padx=5, pady=5, sticky="w")
+
+        # Source ID
+        ttk.Label(frame, text="Source ID:").grid(row=10, column=0, padx=5, pady=5, sticky="e")
+        self.entries["source_id"] = ttk.Entry(frame, width=20)
+        self.entries["source_id"].grid(row=10, column=1, padx=5, pady=5, sticky="w")
+
+        # Notes
+        ttk.Label(frame, text="Notes:").grid(row=11, column=0, padx=5, pady=5, sticky="ne")
+        self.entries["notes"] = tk.Text(frame, width=45, height=4)
+        self.entries["notes"].grid(row=11, column=1, padx=5, pady=5, sticky="w")
+        
         btn = ttk.Frame(self.master)
         btn.pack(pady=10)
         ttk.Button(btn, text="Save", command=self.save_showing).pack(side="left", padx=5)
         ttk.Button(btn, text="Cancel", command=self.master.destroy).pack(side="left", padx=5)
 
-    def load_movie_options(self):
-        self.cursor.execute("SELECT movie_id, title FROM Movies ORDER BY title")
-        rows = self.cursor.fetchall()
-        titles = [r[1] for r in rows]
-        self.movie_combo["values"] = titles
-        self.movie_map = {r[1]: r[0] for r in rows}
-        if titles:
-            self.movie_combo.current(0)
-            self.movie_id = self.movie_map[titles[0]]
-        self.movie_combo.bind("<<ComboboxSelected>>", self._on_movie_select)
-
-    def add_movie(self):
-        """Launch the movie editor to add a new movie."""
-        if open_edit_movie_form:
-            win = open_edit_movie_form(parent=self.master)
-            if win:
-                self.master.wait_window(win)
-        else:
-            subprocess.Popen([sys.executable, "-m", "app.movie.edit_movie"])
-        self.load_movie_options()
-
-    def _on_movie_select(self, event=None):
-        title = self.movie_combo.get()
-        self.movie_id = self.movie_map.get(title)
-
-    def select_theater(self):
-        def callback(bid):
-            self.biz_id = bid
+        if self.biz_id:
             cur = self.conn.cursor()
-            cur.execute("SELECT biz_name FROM Biz WHERE biz_id=?", (bid,))
+            cur.execute("SELECT biz_name FROM Biz WHERE biz_id=?", (self.biz_id,))
             row = cur.fetchone()
             self.biz_display.config(text=row[0] if row else "(Unknown)")
-        open_biz_linkage_popup(callback)
+
 
     def load_showing(self):
         try:
             self.cursor.execute(
-                """SELECT movie_id, biz_id, start_date, end_date, format,
-                          special_event, ticket_price, attendance_estimate, notes
+                """SELECT title, biz_id, start_date, end_date, format,
+                          special_event, ticket_price, attendance_estimate, notes,
+                          poster_url, movie_overview_url, source_id
                        FROM MovieShowings WHERE showing_id=?""",
                 (self.showing_id,),
             )
@@ -134,14 +111,24 @@ class EditShowingForm:
             self.master.destroy()
             return
         if row:
-            (self.movie_id, self.biz_id, start_date, end_date, fmt,
-             special, price, attendance, notes) = row
-            # set movie combo
-            self.load_movie_options()
-            for title, mid in self.movie_map.items():
-                if mid == self.movie_id:
-                    self.movie_combo.set(title)
-                    break
+            (
+                title,
+                self.biz_id,
+                start_date,
+                end_date,
+                fmt,
+                special,
+                price,
+                attendance,
+                notes,
+                poster,
+                overview,
+                source_id,
+            ) = row
+            self.entries["title"].insert(0, title or "")
+            self.entries["poster_url"].insert(0, poster or "")
+            self.entries["movie_overview_url"].insert(0, overview or "")
+            self.entries["source_id"].insert(0, source_id or "")
             if self.biz_id:
                 cur = self.conn.cursor()
                 cur.execute("SELECT biz_name FROM Biz WHERE biz_id=?", (self.biz_id,))
@@ -156,14 +143,14 @@ class EditShowingForm:
             self.entries["notes"].insert("1.0", notes or "")
 
     def save_showing(self):
-        if not self.movie_combo.get():
-            messagebox.showerror("Validation Error", "Select a movie.")
+        if not self.entries["title"].get().strip():
+            messagebox.showerror("Validation Error", "Enter a title.")
             return
         if not self.biz_id:
             messagebox.showerror("Validation Error", "Select a theater.")
             return
         data = {
-            "movie_id": self.movie_map[self.movie_combo.get()],
+            "title": self.entries["title"].get().strip(),
             "biz_id": self.biz_id,
         }
         try:
@@ -179,6 +166,9 @@ class EditShowingForm:
             "special_event": self.entries["special_event"].get().strip(),
             "ticket_price": self.entries["ticket_price"].get().strip(),
             "attendance_estimate": self.entries["attendance_estimate"].get().strip() or None,
+            "poster_url": self.entries["poster_url"].get().strip(),
+            "movie_overview_url": self.entries["movie_overview_url"].get().strip(),
+            "source_id": self.entries["source_id"].get().strip() or None,
             "notes": self.entries["notes"].get("1.0", tk.END).strip(),
         })
 
@@ -196,8 +186,18 @@ class EditShowingForm:
                 return
             data["attendance_estimate"] = int(data["attendance_estimate"])
         cols = [
-            "movie_id", "biz_id", "start_date", "end_date", "format",
-            "special_event", "ticket_price", "attendance_estimate", "notes"
+            "title",
+            "biz_id",
+            "start_date",
+            "end_date",
+            "format",
+            "special_event",
+            "ticket_price",
+            "attendance_estimate",
+            "poster_url",
+            "movie_overview_url",
+            "source_id",
+            "notes",
         ]
         try:
             if self.showing_id:

@@ -3,18 +3,25 @@ from tkinter import ttk, messagebox
 import sqlite3
 import sys
 import subprocess
+import webbrowser
+
+try:
+    from PIL import Image, ImageTk
+except Exception:  # Pillow not installed
+    Image = ImageTk = None
 
 from app.config import DB_PATH
 from app.date_utils import parse_date_input, format_date_for_display
 
 # Readable column widths for the showings list
 COLUMN_WIDTHS = {
-    "title": 200,
-    "theater": 180,
-    "start": 100,
-    "end": 100,
-    "format": 100,
-    "event": 120,
+    "title": 120,
+    "theater": 120,
+    "start": 60,
+    "end": 60,
+    "format": 60,
+    "event": 60,
+    "movie_overview_url": 120,
 }
 from app.biz_linkage import open_biz_linkage_popup
 
@@ -82,8 +89,24 @@ class MovieShowingBrowser:
         self.load_showings()
 
     def _setup_tree(self):
-        columns = ("id", "title", "theater", "start", "end", "format", "event")
-        self.tree = ttk.Treeview(self.master, columns=columns, show="headings")
+        columns = (
+            "id",
+            "title",
+            "theater",
+            "start",
+            "end",
+            "format",
+            "event",
+            "movie_overview_url",
+            "poster_url",
+        )
+        self.columns = columns
+        frame = ttk.Frame(self.master)
+        frame.pack(fill="both", expand=True, padx=10, pady=10)
+        self.tree = ttk.Treeview(frame, columns=columns, show="headings")
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        self.poster_label = ttk.Label(frame)
+        self.poster_label.grid(row=1, column=0, pady=(10, 0), sticky="n")
         headings = {
             "title": "Movie",
             "theater": "Theater",
@@ -91,19 +114,27 @@ class MovieShowingBrowser:
             "end": "End Date",
             "format": "Format",
             "event": "Special Event",
+            "movie_overview_url": "Overview URL",
         }
         for col in columns:
-            if col == "id":
-                self.tree.column("id", width=0, stretch=False)
-            continue
+            if col in ("id", "poster_url"):
+                self.tree.column(col, width=0, stretch=False)
+                continue
 
-            self.tree.heading(col, text=headings.get(col, col.title()), command=lambda c=col: self.sort_by_column(c))
+            self.tree.heading(
+                col,
+                text=headings.get(col, col.title()),
+                command=lambda c=col: self.sort_by_column(c),
+            )
             width = COLUMN_WIDTHS.get(col, 100)
             anchor = "center" if col in ("start", "end", "format") else "w"
             self.tree.column(col, width=width, anchor=anchor)
-        self.tree.pack(fill="both", expand=True, padx=10, pady=10)
-        self.tree.bind("<Double-1>", self.edit_showing)
+        frame.columnconfigure(0, weight=1)
+        frame.rowconfigure(0, weight=1)
+        self.tree.bind("<<TreeviewSelect>>", self.on_tree_select)
+        self.tree.bind("<Double-1>", self.on_tree_double_click)
 
+    
     def _setup_buttons(self):
         frame = ttk.Frame(self.master)
         frame.pack(fill="x", padx=10, pady=5)
@@ -111,6 +142,7 @@ class MovieShowingBrowser:
         ttk.Button(frame, text="Edit", command=self.edit_showing).pack(side="left", padx=5)
         ttk.Button(frame, text="Delete", command=self.delete_showing).pack(side="left", padx=5)
 
+    
     def sort_by_column(self, col):
         items = [(self.tree.set(k, col), k) for k in self.tree.get_children("")]
         reverse = self.sort_column == col and not self.sort_reverse
@@ -120,11 +152,12 @@ class MovieShowingBrowser:
         self.sort_column = col
         self.sort_reverse = reverse
 
+    
     def build_query(self):
         query = (
-            "SELECT s.showing_id, m.title, b.biz_name, s.start_date, s.end_date, s.format, s.special_event "
-            "FROM MovieShowings s JOIN Movies m ON s.movie_id=m.movie_id "
-            "JOIN Biz b ON s.biz_id=b.biz_id WHERE 1=1"
+            "SELECT s.showing_id, s.title, b.biz_name, s.start_date, s.end_date, s.format, "
+            "s.special_event, s.movie_overview_url, s.poster_url "
+            "FROM MovieShowings s JOIN Biz b ON s.biz_id=b.biz_id WHERE 1=1"
         )
         params = []
         if self.filter_biz_id:
@@ -151,6 +184,7 @@ class MovieShowingBrowser:
         query += " ORDER BY s.start_date"
         return query, params
 
+    
     def load_showings(self):
         query, params = self.build_query()
         if query is None:
@@ -159,27 +193,97 @@ class MovieShowingBrowser:
         try:
             self.cursor.execute(query, params)
             for row in self.cursor.fetchall():
-                show_id, title, theater, start, end, fmt, event = row
+                (
+                    show_id,
+                    title,
+                    theater,
+                    start,
+                    end,
+                    fmt,
+                    event,
+                    overview,
+                    poster,
+                ) = row
                 start_disp = format_date_for_display(start, "EXACT") if start else ""
                 end_disp = format_date_for_display(end, "EXACT") if end else ""
-                self.tree.insert("", "end", values=(show_id, title, theater, start_disp, end_disp, fmt, event))
+                self.tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        show_id,
+                        title,
+                        theater,
+                        start_disp,
+                        end_disp,
+                        fmt,
+                        event,
+                        overview,
+                        poster,
+                    ),
+                )
         except Exception as e:
             messagebox.showerror("Database Error", str(e))
 
-    def get_selected_row(self):
+    
+    def get_selected_row(self, silent=False):
         sel = self.tree.selection()
         if not sel:
-            messagebox.showwarning("No Selection", "Please select a record.")
+            if not silent:
+                messagebox.showwarning("No Selection", "Please select a record.")
             return None
         return self.tree.item(sel[0])["values"]
 
+    
+    def on_tree_select(self, event=None):
+        """Display poster image for the selected row if available."""
+        row = self.get_selected_row(silent=True)
+        if not row or not ImageTk:
+            if hasattr(self, "poster_label"):
+                self.poster_label.config(image="", text="")
+                self.poster_label.image = None
+            return
+        poster_url = row[self.columns.index("poster_url")]
+        if not poster_url:
+            self.poster_label.config(image="", text="")
+            self.poster_label.image = None
+            return
+        try:
+            img = Image.open(poster_url)
+            img.thumbnail((150, 200))
+            photo = ImageTk.PhotoImage(img)
+            self.poster_label.config(image=photo)
+            self.poster_label.image = photo
+        except Exception:
+            self.poster_label.config(text="Preview unavailable", image="")
+            self.poster_label.image = None
+
+    
+    def on_tree_double_click(self, event):
+        region = self.tree.identify("region", event.x, event.y)
+        column = self.tree.identify_column(event.x)
+        if region == "cell" and column == f"#{self.columns.index('movie_overview_url')+1}":
+            row = self.get_selected_row(silent=True)
+            if not row:
+                return
+            url = row[self.columns.index("movie_overview_url")]
+            if url and url.startswith("http"):
+                webbrowser.open(url, new=2)
+            else:
+                messagebox.showinfo("No URL", "No valid link provided.")
+        else:
+            self.edit_showing()
+
+
     def add_showing(self):
         if open_edit_showing_form:
-            win = open_edit_showing_form(parent=self.master)
+            win = open_edit_showing_form(parent=self.master, biz_id=self.filter_biz_id)
             if win:
                 self.master.wait_window(win)
         else:
-            subprocess.Popen([sys.executable, "-m", "app.movie.edit_showing"])
+            args = [sys.executable, "-m", "app.movie.edit_showing"]
+            if self.filter_biz_id:
+                args.append(str(self.filter_biz_id))
+            subprocess.Popen(args)
         self.load_showings()
 
     def edit_showing(self, event=None):
