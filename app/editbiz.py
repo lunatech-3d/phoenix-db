@@ -7,6 +7,11 @@ import webbrowser
 import urllib.parse
 import sys
 
+try:
+    from PIL import Image, ImageTk
+except Exception:  # Pillow may not be installed
+    Image = ImageTk = None
+
 #Local Imports
 from app.config import PATHS, DB_PATH
 from app.date_utils import parse_date_input, format_date_for_display, date_sort_key
@@ -355,24 +360,51 @@ class EditBusinessForm:
         # --- Movie Showings Section ---
         self.showings_frame = ttk.LabelFrame(self.showings_tab, text="Showings")
         self.showings_frame.pack(fill="both", expand=False, padx=10, pady=5)
+        
+        search_frame = ttk.Frame(self.showings_frame)
+        search_frame.pack(fill="x", padx=5, pady=5)
+        ttk.Label(search_frame, text="Title Contains:").grid(row=0, column=0, padx=5, sticky="e")
+        self.showing_title_filter = ttk.Entry(search_frame, width=20)
+        self.showing_title_filter.grid(row=0, column=1, padx=5)
 
-        show_cols = ("showing_id", "title", "start", "end", "format", "event")
+        ttk.Label(search_frame, text="Date:").grid(row=0, column=2, padx=5, sticky="e")
+        self.showing_date_filter = ttk.Entry(search_frame, width=12)
+        self.showing_date_filter.grid(row=0, column=3, padx=5)
+
+        ttk.Button(search_frame, text="Search", command=self.load_showings).grid(row=0, column=4, padx=5)
+        ttk.Button(search_frame, text="Clear", command=self.clear_showing_filters).grid(row=0, column=5, padx=5)
+
+        show_cols = (
+            "showing_id",
+            "title",
+            "start",
+            "end",
+            "movie_overview_url",
+            "format",
+            "event",
+            "poster_url",
+        )
         self.showing_tree = ttk.Treeview(self.showings_frame, columns=show_cols, show="headings", height=5)
         
         show_widths = {
-            "title": 200,
-            "start": 100,
-            "end": 100,
-            "format": 100,
-            "event": 120,
+            "title": 140,
+            "start": 80,
+            "end": 80,
+            "movie_overview_url": 140,
+            "format": 70,
+            "event": 80,
         }
         
         for col in show_cols:
             self.showing_tree.heading(col, text=col.title(), command=lambda c=col: self.sort_showing_tree_by_column(c))
-            width = 0 if col == "showing_id" else show_widths.get(col, 100)
-            self.showing_tree.column(col, width=width, anchor="w", stretch=(col != "showing_id"))
+            width = 0 if col in ("showing_id", "poster_url") else show_widths.get(col, 80)
+            self.showing_tree.column(col, width=width, anchor="w", stretch=(col not in ("showing_id", "poster_url")))
         self.showing_tree.pack(side="top", fill="x", expand=False, padx=5)
+        self.showing_tree.bind("<<TreeviewSelect>>", self.on_showing_select)
         self.showing_tree.bind("<Double-1>", self.on_showing_double_click)
+
+        self.poster_label = ttk.Label(self.showings_frame)
+        self.poster_label.pack(pady=(10, 0))
 
         show_btns = ttk.Frame(self.showings_frame)
         show_btns.pack(side="bottom", fill="x")
@@ -1411,11 +1443,27 @@ class EditBusinessForm:
 
     def load_showings(self):
         self.showing_tree.delete(*self.showing_tree.get_children())
-        self.cursor.execute(
-            """SELECT showing_id, title, start_date, end_date, format, special_event
-               FROM MovieShowings WHERE biz_id=? ORDER BY start_date""",
-            (self.biz_id,)
+        query = (
+            "SELECT showing_id, title, start_date, end_date, movie_overview_url, "
+            "format, special_event, poster_url FROM MovieShowings WHERE biz_id=?"
         )
+        params = [self.biz_id]
+        title_like = self.showing_title_filter.get().strip() if hasattr(self, "showing_title_filter") else ""
+        if title_like:
+            query += " AND title LIKE ?"
+            params.append(f"%{title_like}%")
+        date_val = self.showing_date_filter.get().strip() if hasattr(self, "showing_date_filter") else ""
+        if date_val:
+            try:
+                parsed, _ = parse_date_input(date_val)
+                query += " AND (start_date<=? AND (end_date>=? OR end_date IS NULL))"
+                params.extend([parsed, parsed])
+            except ValueError as e:
+                messagebox.showerror("Date", str(e))
+                return
+        query += " ORDER BY start_date"
+        self.cursor.execute(query, params)
+        
         rows = self.cursor.fetchall()
   
         if rows and not self.showing_tab_added:
@@ -1431,11 +1479,34 @@ class EditBusinessForm:
             self.showing_tab_added = False
 
         for row in rows:
-            self.showing_tree.insert('', 'end', values=row)
+            (
+                showing_id,
+                title,
+                start_date,
+                end_date,
+                overview,
+                fmt,
+                event,
+                poster,
+            ) = row
+            start_disp = format_date_for_display(start_date, "EXACT") if start_date else ""
+            end_disp = format_date_for_display(end_date, "EXACT") if end_date else ""
+            self.showing_tree.insert(
+                "",
+                "end",
+                values=(showing_id, title, start_disp, end_disp, overview, fmt, event, poster),
+            )
 
         self.update_add_menu_state()
 
-    
+    def clear_showing_filters(self):
+        if hasattr(self, "showing_title_filter"):
+            self.showing_title_filter.delete(0, tk.END)
+        if hasattr(self, "showing_date_filter"):
+            self.showing_date_filter.delete(0, tk.END)
+        self.load_showings()
+
+
     def add_showing(self):
         win = open_edit_showing_form(parent=self.master, biz_id=self.biz_id)
         if win:
@@ -1466,9 +1537,55 @@ class EditBusinessForm:
         except Exception as e:
             messagebox.showerror("Delete Failed", str(e))
 
+    def on_showing_select(self, event=None):
+        """Display the poster for the selected showing if available."""
+        if not ImageTk:
+            return
+        sel = self.showing_tree.selection()
+        if not sel:
+            self.poster_label.config(image="", text="")
+            self.poster_label.image = None
+            return
+        values = self.showing_tree.item(sel[0])["values"]
+        poster_url = values[7] if len(values) > 7 else ""
+        if not poster_url:
+            self.poster_label.config(image="", text="")
+            self.poster_label.image = None
+            return
+        try:
+            if poster_url.startswith("http://") or poster_url.startswith("https://"):
+                from io import BytesIO
+                import urllib.request
+
+                with urllib.request.urlopen(poster_url) as resp:
+                    img_data = resp.read()
+                img = Image.open(BytesIO(img_data))
+            else:
+                img = Image.open(poster_url)
+
+            img.thumbnail((300, 400))
+            photo = ImageTk.PhotoImage(img)
+            self.poster_label.config(image=photo, text="")
+            self.poster_label.image = photo
+        except Exception:
+            self.poster_label.config(text="Preview unavailable", image="")
+            self.poster_label.image = None
     
+
     def on_showing_double_click(self, event):
-        self.edit_showing()
+        region = self.showing_tree.identify("region", event.x, event.y)
+        column = self.showing_tree.identify_column(event.x)
+        if region == "cell" and column == "#5":
+            sel = self.showing_tree.selection()
+            if not sel:
+                return
+            url = self.showing_tree.item(sel[0])["values"][4]
+            if url and url.startswith("http"):
+                webbrowser.open(url, new=2)
+            else:
+                messagebox.showinfo("No URL", "No valid link provided.")
+        else:
+            self.edit_showing()
 
     
     def sort_bizevents_tree_by_column(self, col):

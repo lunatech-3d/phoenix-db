@@ -248,10 +248,18 @@ class MovieShowingBrowser:
             self.poster_label.image = None
             return
         try:
-            img = Image.open(poster_url)
+            if poster_url.startswith("http://") or poster_url.startswith("https://"):
+                from io import BytesIO
+                import urllib.request
+
+                with urllib.request.urlopen(poster_url) as resp:
+                    img_data = resp.read()
+                img = Image.open(BytesIO(img_data))
+            else:
+                img = Image.open(poster_url)
             img.thumbnail((150, 200))
             photo = ImageTk.PhotoImage(img)
-            self.poster_label.config(image=photo)
+            self.poster_label.config(image=photo, text="")
             self.poster_label.image = photo
         except Exception:
             self.poster_label.config(text="Preview unavailable", image="")
