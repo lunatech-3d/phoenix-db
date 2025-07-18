@@ -1,11 +1,13 @@
 # editbiz.py
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
+import os
 import subprocess
 import sqlite3
 import webbrowser
 import urllib.parse
 import sys
+import re
 
 try:
     from PIL import Image, ImageTk
@@ -13,7 +15,7 @@ except Exception:  # Pillow may not be installed
     Image = ImageTk = None
 
 #Local Imports
-from app.config import PATHS, DB_PATH
+from app.config import PATHS, DB_PATH, REPO_DIR
 from app.date_utils import parse_date_input, format_date_for_display, date_sort_key
 from app.context_menu import create_context_menu, apply_context_menu_to_all_entries
 from app.person_linkage import person_search_popup
@@ -46,6 +48,9 @@ RELATIONSHIP_INVERSION = {
     "Partnered With": "Partnered With"  # symmetric
 }
 
+# Directory for business photos within the project
+BIZ_PHOTO_DIR = REPO_DIR / "assets" / "pics" / "biz"
+
 class EditBusinessForm:
     def __init__(self, master, biz_id=None):
         self.master = master
@@ -61,6 +66,8 @@ class EditBusinessForm:
         self.showing_tab_added = False
         
         self.setup_form()
+        # Ensure the photo area displays correctly before any data is loaded
+        self.display_image(None)
         if biz_id:
             self.load_data()
             self.load_owners()
@@ -142,11 +149,17 @@ class EditBusinessForm:
         main.pack(fill="both", expand=True)
         main.columnconfigure(1, weight=1)
 
-        photo_frame = ttk.Frame(main)
-        photo_frame.grid(row=0, column=0, sticky="ns", padx=10, pady=10)
-        ttk.Label(photo_frame, text="(photo)").pack()
-        self.add_info_btn = ttk.Button(photo_frame, text="+", width=3, command=self.open_add_menu)
-        self.add_info_btn.pack(pady=5)
+        self.photo_frame = ttk.Frame(main)
+        self.photo_frame.grid(row=0, column=0, sticky="ns", padx=10, pady=10)
+        self.photo_label = ttk.Label(self.photo_frame, text="(photo)")
+        self.photo_label.pack()
+        self.photo_label.bind("<Enter>", self._show_remove_button)
+        self.photo_label.bind("<Leave>", self._hide_remove_button)
+
+        self.remove_photo_btn = ttk.Button(self.photo_frame, text="Remove Photo", command=self.remove_photo)
+        self.remove_photo_btn.place_forget()
+
+        self.add_info_btn = ttk.Button(self.photo_frame, text="+", width=3, command=self.open_add_menu)
 
         notebook_container = ttk.Frame(main)
         notebook_container.grid(row=0, column=1, sticky="nsew")
@@ -220,7 +233,8 @@ class EditBusinessForm:
         btn_frame.grid(row=6, column=0, columnspan=7, pady=10)
         ttk.Button(btn_frame, text="Save", command=self.save).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Close", command=self.master.destroy).pack(side="left", padx=5)
-
+        self.add_photo_button = ttk.Button(btn_frame, text="Add Photo", command=self.add_photo)
+        self.add_photo_button.pack(side="left", padx=5)
 
         # Tree Section for Owners
         self.owner_frame = ttk.LabelFrame(self.people_tab, text="Business Owners")
@@ -1634,7 +1648,58 @@ class EditBusinessForm:
         """Refresh any dynamic UI elements when tabs are added or removed."""
         pass
          
+    def _show_remove_button(self, event=None):
+        if getattr(self, "current_image_path", None):
+            self.remove_photo_btn.place(relx=0.5, rely=0.5, anchor="center")
 
+    def _hide_remove_button(self, event=None):
+        self.remove_photo_btn.place_forget()
+
+    def display_image(self, image_path):
+        self.current_image_path = image_path
+        if not Image:
+            return
+        full_path = image_path
+        if image_path and not os.path.isabs(image_path):
+            full_path = os.path.join(REPO_DIR, image_path)
+        if image_path and os.path.isfile(full_path):
+            img = Image.open(full_path)
+            img.thumbnail((250, 250))
+            self.photo_img = ImageTk.PhotoImage(img)
+            self.photo_label.config(image=self.photo_img, text="")
+            self.photo_label.image = self.photo_img
+            self.add_photo_button.pack_forget()
+        else:
+            self.photo_label.config(image="", text="(photo)")
+            self.photo_label.image = None
+            self.add_photo_button.pack(side="left", padx=5)
+
+    def add_photo(self):
+        if not self.biz_id:
+            messagebox.showwarning("Save Record", "Please save before adding a photo.")
+            return
+        file_path = filedialog.askopenfilename(initialdir=str(BIZ_PHOTO_DIR),
+                                               filetypes=[("Image files", "*.jpg *.png *.tif")])
+        if not file_path:
+            return
+        filename = os.path.basename(file_path)
+        rel_path = os.path.join("assets", "pics", "biz", filename)
+        self.cursor.execute("UPDATE Biz SET image_path = ? WHERE biz_id = ?", (rel_path, self.biz_id))
+        self.conn.commit()
+        self.entries["image_path"].delete(0, tk.END)
+        self.entries["image_path"].insert(0, rel_path)
+        self.display_image(rel_path)
+
+    def remove_photo(self):
+        if not self.biz_id or not self.current_image_path:
+            return
+        if not messagebox.askyesno("Remove Photo", "Remove the current photo?"):
+            return
+        self.cursor.execute("UPDATE Biz SET image_path = '' WHERE biz_id = ?", (self.biz_id,))
+        self.conn.commit()
+        self.entries["image_path"].delete(0, tk.END)
+        self.display_image(None)
+    
     def load_data(self):
         # Load Biz main fields
         self.cursor.execute("""
@@ -1673,6 +1738,8 @@ class EditBusinessForm:
                     self.entries[k].delete(0, tk.END)
                     self.entries[k].insert(0, data[k] or "")
 
+            self.display_image(data.get("image_path"))
+            
         # Load Predecessor
         self.cursor.execute("""
             SELECT parent_biz_id, relationship_type FROM BizLineage
