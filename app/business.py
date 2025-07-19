@@ -25,7 +25,7 @@ class BusinessManager:
         self.setup_buttons()  # <-- Add/Edit/Delete
         self.load_businesses()
         # Ensure context menus on search fields and tree view
-        apply_context_menu_to_all_entries(edit_form)
+        apply_context_menu_to_all_entries(self.root)
 
     def setup_tree(self):
         # Define internal column keys
@@ -157,11 +157,30 @@ class BusinessManager:
         self.cursor.execute(query, tuple(params))
 
         for row in self.cursor.fetchall():
-            biz_id, name, category, start_date, start_prec, end_date, end_prec, url = row
+            (
+                biz_id,
+                name,
+                category,
+                start_date,
+                start_prec,
+                end_date,
+                end_prec,
+                url,
+            ) = row
             start_fmt = format_date_for_display(start_date, start_prec) if start_date else ""
             end_fmt = format_date_for_display(end_date, end_prec) if end_date else ""
-            self.tree.insert('', 'end', values=(biz_id, name, category, start_fmt, end_fmt, url))
-
+            self.tree.insert(
+                '',
+                'end',
+                values=(
+                    biz_id,
+                    name or "",
+                    category or "",
+                    start_fmt,
+                    end_fmt,
+                    url or "",
+                ),
+            )
 
     def add_business(self):
         open_edit_business_form()

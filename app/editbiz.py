@@ -528,15 +528,36 @@ class EditBusinessForm:
         sorted_rows = sorted(rows, key=lambda row: (row[5] or "", row[3]))
 
         for row in sorted_rows:
-            (biz_ownership_id, person_id, name, otype, title,
-             start, start_prec, end, end_prec, notes) = row
+            (
+                biz_ownership_id,
+                person_id,
+                name,
+                otype,
+                title,
+                start,
+                start_prec,
+                end,
+                end_prec,
+                notes,
+            ) = row
 
             start_display = format_date_for_display(start, start_prec) if start else ""
             end_display = format_date_for_display(end, end_prec) if end else ""
 
-            self.owner_tree.insert('', 'end', values=(
-                biz_ownership_id, person_id, name, otype, title, start_display, end_display, notes))
-
+            self.owner_tree.insert(
+                '',
+                'end',
+                values=(
+                    biz_ownership_id,
+                    person_id,
+                    name,
+                    otype,
+                    title or "",
+                    start_display,
+                    end_display,
+                    notes or "",
+                ),
+            )
     def add_owner(self):
         self.open_owner_editor()
 
@@ -777,9 +798,17 @@ class EditBusinessForm:
             start_display = format_date_for_display(start, start_prec) if start else ""
             end_display = format_date_for_display(end, end_prec) if end else ""
 
-            self.location_tree.insert('', 'end', values=(
-                address, start_display, end_display, notes, url
-            ))
+            self.location_tree.insert(
+                '',
+                'end',
+                values=(
+                    address,
+                    start_display,
+                    end_display,
+                    notes or "",
+                    url or "",
+                ),
+            )
         
         self.update_add_menu_state()
 
@@ -1039,9 +1068,18 @@ class EditBusinessForm:
             start_display = format_date_for_display(start, start_prec) if start else ""
             end_display = format_date_for_display(end, end_prec) if end else ""
 
-            self.employee_tree.insert('', 'end', values=(
-                person_id, name, job_title, start_display, end_display, notes
-            ))
+            self.employee_tree.insert(
+                '',
+                'end',
+                values=(
+                    person_id,
+                    name,
+                    job_title or "",
+                    start_display,
+                    end_display,
+                    notes or "",
+                ),
+            )
 
     def add_employee(self):
         def on_person_selected(person_id):
@@ -1560,7 +1598,7 @@ class EditBusinessForm:
         params = [self.biz_id]
         title_like = self.showing_title_filter.get().strip() if hasattr(self, "showing_title_filter") else ""
         if title_like:
-            query += " AND title LIKE ?"
+            query += " AND UPPER(title) LIKE UPPER(?)"
             params.append(f"%{title_like}%")
         date_val = self.showing_date_filter.get().strip() if hasattr(self, "showing_date_filter") else ""
         if date_val:
@@ -1584,7 +1622,13 @@ class EditBusinessForm:
             else:
                 self.notebook.insert(index, self.showings_tab, text="Showings")
             self.showing_tab_added = True
-        elif not rows and self.showing_tab_added:
+        elif (
+            not rows
+            and self.showing_tab_added
+            and not title_like
+            and not date_val
+        ):
+            # Only remove tab if there are truly no showings for this business
             self.notebook.forget(self.showings_tab)
             self.showing_tab_added = False
 
@@ -1604,7 +1648,16 @@ class EditBusinessForm:
             self.showing_tree.insert(
                 "",
                 "end",
-                values=(showing_id, title, start_disp, end_disp, overview, fmt, event, poster),
+                values=(
+                    showing_id,
+                    title or "",
+                    start_disp,
+                    end_disp,
+                    overview or "",
+                    fmt or "",
+                    event or "",
+                    poster or "",
+                ),
             )
 
         self.update_add_menu_state()
