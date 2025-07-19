@@ -79,6 +79,26 @@ class EditBusinessForm:
             self.disable_related_sections()
     
 
+    def display_image(self, label, image_path, max_height=250):
+        """Utility to display an image on a ttk.Label."""
+        if not ImageTk or not image_path:
+            label.config(image="", text="")
+            label.image = None
+            return
+
+        try:
+            img = Image.open(image_path)
+            ratio = max_height / img.height
+            width = int(img.width * ratio)
+            img = img.resize((width, max_height), Image.LANCZOS)
+            photo = ImageTk.PhotoImage(img)
+            label.config(image=photo, text="")
+            label.image = photo
+        except Exception:
+            label.config(image="", text="")
+            label.image = None
+    
+
     def open_linked_business(self, field):
         label = self.entries[field].cget("text")
         if not label:
@@ -160,6 +180,11 @@ class EditBusinessForm:
         self.remove_photo_btn.place_forget()
 
         self.add_info_btn = ttk.Button(self.photo_frame, text="+", width=3, command=self.open_add_menu)
+        self.add_info_btn.pack(pady=5)
+
+        # Placeholder for employer/employee photo displayed on People tab
+        self.person_photo_label = ttk.Label(self.photo_frame)
+        self.person_photo_label.pack(pady=(10, 0))
 
         notebook_container = ttk.Frame(main)
         notebook_container.grid(row=0, column=1, sticky="nsew")
@@ -168,6 +193,7 @@ class EditBusinessForm:
 
         self.notebook = ttk.Notebook(notebook_container)
         self.notebook.grid(row=0, column=0, sticky="nsew")
+        self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_change)
 
         # Tabs
         self.overview_tab = ttk.Frame(self.notebook)
@@ -262,6 +288,7 @@ class EditBusinessForm:
                 self.owner_tree.column(col, width=120)
 
         self.owner_tree.bind("<Double-1>", self.on_owner_double_click)
+        self.owner_tree.bind("<<TreeviewSelect>>", self.on_owner_select)
         self.owner_tree.pack(side="top", fill="x", expand=False, padx=5)
 
         owner_btns = ttk.Frame(self.owner_frame)
@@ -325,7 +352,7 @@ class EditBusinessForm:
         
         self.employee_tree.pack(side="top", fill="x", expand=False, padx=5)
         self.employee_tree.bind("<Double-1>", self.on_employee_double_click)
-
+        self.employee_tree.bind("<<TreeviewSelect>>", self.on_employee_select)
 
         emp_btns = ttk.Frame(self.employee_frame)
         emp_btns.pack(side="bottom", fill="x")
@@ -664,6 +691,19 @@ class EditBusinessForm:
                 self.master.destroy()  # Optional: close current biz form if needed
                 subprocess.Popen([sys.executable, "-m", "app.editme", str(person_id)])
     
+    def on_owner_select(self, event=None):
+        if self.notebook.index(self.notebook.select()) != self.notebook.index(self.people_tab):
+            return
+        sel = self.owner_tree.selection()
+        if not sel:
+            self.person_photo_label.config(image="", text="")
+            self.person_photo_label.image = None
+            return
+        values = self.owner_tree.item(sel[0])['values']
+        if len(values) > 1:
+            self.display_person_photo(values[1])
+
+
     def sort_owner_tree_by_column(self, col):
         if not hasattr(self, '_owner_sort_state'):
             self._owner_sort_state = {}
@@ -1124,6 +1164,19 @@ class EditBusinessForm:
                 subprocess.Popen([sys.executable, "-m", "app.editme", str(person_id)])
 
             
+    def on_employee_select(self, event=None):
+        if self.notebook.index(self.notebook.select()) != self.notebook.index(self.people_tab):
+            return
+        sel = self.employee_tree.selection()
+        if not sel:
+            self.person_photo_label.config(image="", text="")
+            self.person_photo_label.image = None
+            return
+        values = self.employee_tree.item(sel[0])['values']
+        if values:
+            self.display_person_photo(values[0])
+
+
     def sort_employee_tree_by_column(self, col):
         if not hasattr(self, '_employee_sort_state'):
             self._employee_sort_state = {}
@@ -1648,6 +1701,13 @@ class EditBusinessForm:
         """Refresh any dynamic UI elements when tabs are added or removed."""
         pass
          
+    def on_tab_change(self, event=None):
+        """Clear person photo when leaving the People tab."""
+        current = self.notebook.tab(self.notebook.select(), "text")
+        if current != "People":
+            self.person_photo_label.config(image="", text="")
+            self.person_photo_label.image = None
+
     def _show_remove_button(self, event=None):
         if getattr(self, "current_image_path", None):
             self.remove_photo_btn.place(relx=0.5, rely=0.5, anchor="center")
@@ -1673,6 +1733,34 @@ class EditBusinessForm:
             self.photo_label.config(image="", text="(photo)")
             self.photo_label.image = None
             self.add_photo_button.pack(side="left", padx=5)
+
+    
+    def display_person_photo(self, person_id):
+        """Display a photo for the given person ID under the business image."""
+        if not ImageTk:
+            return
+        if not person_id:
+            self.person_photo_label.config(image="", text="")
+            self.person_photo_label.image = None
+            return
+
+        self.cursor.execute(
+            "SELECT image_path FROM Photos WHERE person_id=? LIMIT 1",
+            (person_id,),
+        )
+        row = self.cursor.fetchone()
+        path = row[0] if row else None
+        if path and not os.path.isabs(path):
+            path = os.path.join(REPO_DIR, path)
+        if path and os.path.isfile(path):
+            img = Image.open(path)
+            img.thumbnail((200, 250))
+            self.person_img = ImageTk.PhotoImage(img)
+            self.person_photo_label.config(image=self.person_img, text="")
+            self.person_photo_label.image = self.person_img
+        else:
+            self.person_photo_label.config(image="", text="")
+            self.person_photo_label.image = None
 
     def add_photo(self):
         if not self.biz_id:
