@@ -5,6 +5,7 @@ import sys
 
 from app.config import DB_PATH
 from app.date_utils import parse_date_input
+from app.context_menu import apply_context_menu_to_all_entries
 
 class EditShowingForm:
     """Form to add or edit a movie showing."""
@@ -89,6 +90,7 @@ class EditShowingForm:
         ttk.Button(btn, text="Save", command=self.save_showing).pack(side="left", padx=5)
         ttk.Button(btn, text="Cancel", command=self.master.destroy).pack(side="left", padx=5)
 
+        apply_context_menu_to_all_entries(self.master)
         if self.biz_id:
             cur = self.conn.cursor()
             cur.execute("SELECT biz_name FROM Biz WHERE biz_id=?", (self.biz_id,))

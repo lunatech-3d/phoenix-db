@@ -5,6 +5,7 @@ import sqlite3
 
 #Local Imports
 from app.config import DB_PATH, PATHS
+from app.context_menu import apply_context_menu_to_all_entries
 
 def open_biz_linkage_popup(callback):
     def refresh_tree():
@@ -84,6 +85,7 @@ def open_biz_linkage_popup(callback):
     ttk.Button(btn_frame, text="Cancel", command=popup.destroy).pack(side="left", padx=10)
 
     refresh_tree()  # Initial load
+    apply_context_menu_to_all_entries(popup)
 
     popup.transient()
     popup.grab_set()

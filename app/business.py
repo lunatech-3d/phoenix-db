@@ -8,6 +8,7 @@ import webbrowser
 from app.config import DB_PATH, PATHS
 from app.date_utils import format_date_for_display
 from app.editbiz import open_edit_business_form
+from app.context_menu import apply_context_menu_to_all_entries
 
 class BusinessManager:
     def __init__(self, root):
@@ -23,6 +24,8 @@ class BusinessManager:
         self.setup_tree()
         self.setup_buttons()  # <-- Add/Edit/Delete
         self.load_businesses()
+        # Ensure context menus on search fields and tree view
+        apply_context_menu_to_all_entries(edit_form)
 
     def setup_tree(self):
         # Define internal column keys

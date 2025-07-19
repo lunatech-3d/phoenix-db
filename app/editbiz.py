@@ -64,6 +64,7 @@ class EditBusinessForm:
         self.succeeded_by_id_map = {}
         self.location_tab_added = False
         self.showing_tab_added = False
+        self._suppress_select = False
         
         self.setup_form()
         # Ensure the photo area displays correctly before any data is loaded
@@ -145,6 +146,16 @@ class EditBusinessForm:
             elif field == "succeeded_by":
                 self.succeeded_by_id_map.clear()
 
+   
+    def clear_other_tree_selections(self, active_tree):
+        """Remove selections from trees other than the given active tree."""
+        self._suppress_select = True
+        for tree in (self.owner_tree, self.employee_tree, self.bizevents_tree):
+            if tree is not active_tree:
+                tree.selection_remove(tree.selection())
+        self._suppress_select = False
+
+    
     def setup_form(self):
         
         self.relationship_dropdowns = {}
@@ -202,7 +213,7 @@ class EditBusinessForm:
         self.showings_tab = ttk.Frame(self.notebook)
 
         self.notebook.add(self.overview_tab, text="Overview")
-        self.notebook.add(self.people_tab, text="People")
+        self.notebook.add(self.people_tab, text="People & Events")
 
         form_frame = ttk.LabelFrame(self.overview_tab, text="Business Details")
         form_frame.pack(fill="x", padx=10, pady=10)
@@ -386,6 +397,7 @@ class EditBusinessForm:
         
         self.bizevents_tree.pack(side="top", fill="x", expand=False, padx=5)
         self.bizevents_tree.bind("<Double-1>", self.on_bizevent_double_click)
+        self.bizevents_tree.bind("<<TreeviewSelect>>", self.on_bizevent_select)
 
 
         bizevents_btns = ttk.Frame(self.bizevents_frame)
@@ -425,12 +437,12 @@ class EditBusinessForm:
             "event",
             "poster_url",
         )
-        self.showing_tree = ttk.Treeview(self.showings_frame, columns=show_cols, show="headings", height=5)
+        self.showing_tree = ttk.Treeview(self.showings_frame, columns=show_cols, show="headings", height=10)
         
         show_widths = {
             "title": 140,
-            "start": 80,
-            "end": 80,
+            "start": 15,
+            "end": 45,
             "movie_overview_url": 140,
             "format": 70,
             "event": 80,
@@ -656,7 +668,8 @@ class EditBusinessForm:
         # Buttons (fixed indentation)
         ttk.Button(self.owner_win, text="Save", command=save_owner).grid(row=len(labels)+2, column=0, pady=10)
         ttk.Button(self.owner_win, text="Cancel", command=self.owner_win.destroy).grid(row=len(labels)+2, column=1, pady=10)
-     
+        apply_context_menu_to_all_entries(self.owner_win) 
+    
     def open_owner_editor_with_person(self, person_id):
         self.open_owner_editor(person_id=person_id)
 
@@ -692,8 +705,11 @@ class EditBusinessForm:
                 subprocess.Popen([sys.executable, "-m", "app.editme", str(person_id)])
     
     def on_owner_select(self, event=None):
+        if self._suppress_select:
+            return
         if self.notebook.index(self.notebook.select()) != self.notebook.index(self.people_tab):
             return
+        self.clear_other_tree_selections(self.owner_tree)
         sel = self.owner_tree.selection()
         if not sel:
             self.person_photo_label.config(image="", text="")
@@ -929,7 +945,9 @@ class EditBusinessForm:
         ttk.Button(btn_frame, text="Save", command=save_location).pack(side="left", padx=10)
         ttk.Button(btn_frame, text="Cancel", command=self.location_win.destroy).pack(side="left", padx=10)    
     
+        apply_context_menu_to_all_entries(self.owner_win)
 
+    
     def delete_location(self):
         selected = self.location_tree.selection()
         if not selected:
@@ -1141,7 +1159,7 @@ class EditBusinessForm:
                 messagebox.showerror("Error", "This employment record already exists with the same start date.")
 
         ttk.Button(win, text="Save", command=save_employee).grid(row=len(labels)+1, column=0, columnspan=2, pady=10)
-        
+        apply_context_menu_to_all_entries(self.owner_win)
 
     def delete_employee(self):
         selected = self.employee_tree.selection()
@@ -1165,8 +1183,11 @@ class EditBusinessForm:
 
             
     def on_employee_select(self, event=None):
+        if self._suppress_select:
+            return
         if self.notebook.index(self.notebook.select()) != self.notebook.index(self.people_tab):
             return
+        self.clear_other_tree_selections(self.employee_tree)
         sel = self.employee_tree.selection()
         if not sel:
             self.person_photo_label.config(image="", text="")
@@ -1438,6 +1459,7 @@ class EditBusinessForm:
         ttk.Button(btn_frame, text="Save", command=save_event).pack(side="left", padx=10)
         ttk.Button(btn_frame, text="Cancel", command=win.destroy).pack(side="left", padx=10)
 
+        apply_context_menu_to_all_entries(self.owner_win)
 
 
     def delete_bizevent(self):
@@ -1497,6 +1519,27 @@ class EditBusinessForm:
                 webbrowser.open(url, new=2)
             else:
                 messagebox.showinfo("No URL", "No valid link provided for this event.")
+
+    def on_bizevent_select(self, event=None):
+        if self._suppress_select:
+            return
+        if self.notebook.index(self.notebook.select()) != self.notebook.index(self.people_tab):
+            return
+        self.clear_other_tree_selections(self.bizevents_tree)
+        sel = self.bizevents_tree.selection()
+        if not sel:
+            self.person_photo_label.config(image="", text="")
+            self.person_photo_label.image = None
+            return
+        event_id = self.bizevents_tree.item(sel[0])['values'][0]
+        self.cursor.execute("SELECT person_id FROM BizEvents WHERE event_id = ?", (event_id,))
+        res = self.cursor.fetchone()
+        if res and res[0]:
+            self.display_person_photo(res[0])
+        else:
+            self.person_photo_label.config(image="", text="")
+            self.person_photo_label.image = None
+
 
     def sort_showing_tree_by_column(self, col):
         if not hasattr(self, '_showing_sort_state'):

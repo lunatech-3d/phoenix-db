@@ -8,6 +8,7 @@ import sys
 from app.config import DB_PATH, PATHS
 from app.date_utils import parse_date_input, format_date_for_display
 from app.biz_linkage import open_biz_linkage_popup
+from app.context_menu import apply_context_menu_to_all_entries
 
 class OwnershipForm:
     def __init__(self, root, person_id=None, ownership_id=None, biz_id=None):
@@ -22,6 +23,7 @@ class OwnershipForm:
         self.setup_form()
         if ownership_id:
             self.load_data()
+            apply_context_menu_to_all_entries(popup)
 
     def setup_form(self):
         # Person name label

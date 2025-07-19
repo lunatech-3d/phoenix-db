@@ -6,6 +6,7 @@ import sqlite3
 from app.config import DB_PATH, PATHS
 from app.date_utils import parse_date_input, format_date_for_display
 from app.biz_linkage import open_biz_linkage_popup
+from app.context_menu import apply_context_menu_to_all_entries
 
 
 class EmployeeForm:
@@ -21,6 +22,7 @@ class EmployeeForm:
         self.setup_form()
         if employment_id:
             self.load_data()
+            apply_context_menu_to_all_entries(self.root)
 
     def setup_form(self):
         row_num = 0

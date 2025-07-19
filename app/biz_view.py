@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import sqlite3
 from tkinter import messagebox
+from app.context_menu import apply_context_menu_to_all_entries
 
 # Connect to the database
 conn = sqlite3.connect('phoenix.db')
@@ -113,6 +114,7 @@ def open_edit_form(record=None):
     # Save button
     save_button = ttk.Button(edit_form, text="Save Changes", command=save_changes)
     save_button.grid(row=8, column=0, columnspan=2, padx=5, pady=10)
+    apply_context_menu_to_all_entries(edit_form)
 
 # Create the GUI window
 window = tk.Tk()
